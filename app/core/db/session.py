@@ -1,39 +1,24 @@
-import os
-import orjson
+import sqlalchemy as _sql
+import sqlalchemy.ext.declarative as _declarative
+import sqlalchemy.orm as _orm
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+import os
 
-load_dotenv(".env")
-
-Base = declarative_base()
+# Load environment variables from .env file
+load_dotenv()
 
 
-def orjson_serializer(obj):
-    """
-    Note that `orjson.dumps()` return byte array, while sqlalchemy expects string, thus `decode()` call.
-    This function helped to solve JSON datetime conversion issue on JSONB column
-    """
-    return orjson.dumps(
-        obj, option=orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NAIVE_UTC
-    ).decode()
+# Retrieve environment variables
+postgres_host = os.environ.get("POSTGRES_HOST")
+postgres_db = os.environ.get("POSTGRES_DB")
+postgres_user = os.environ.get("POSTGRES_USER")
+postgres_password = os.environ.get("POSTGRES_PASSWORD")
 
 
-engine = create_engine(
-    os.environ["SUPABASE_URL"],
-    # required for sqlite
-    json_serializer=orjson_serializer,
-    json_deserializer=orjson.loads,
-    connect_args={},
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Assuming your PostgreSQL server is running locally with a database named 'mydatabase'
+DATABASE_URL = f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}/{postgres_db}"
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+engine = _sql.create_engine(DATABASE_URL)
+SessionLocal = _orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = _declarative.declarative_base()

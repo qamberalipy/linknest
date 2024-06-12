@@ -1,22 +1,35 @@
 import os
 from fastapi import FastAPI, APIRouter
 from fastapi_sqlalchemy import DBSessionMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.core.main_router import router as main_router
-from app.core.logger import init_logging
+from app.user import user_router
+# from app.core.logger import init_logging
+# import logging
 
 load_dotenv(".env")
 
 root_router = APIRouter()
 
 app = FastAPI(title="FastAPI Boiler Plate")
-app.add_middleware(DBSessionMiddleware, db_url=os.environ["SUPABASE_URL"])
 
+app.add_middleware(CORSMiddleware,
+    allow_origins=['*'],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
-init_logging()
+app.include_router(main_router)
+app.include_router(user_router)
+app.include_router(root_router)
 
-if __name__ == "__main__":
+AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL")
+# logging.basicConfig(level=logging.INFO)
 
-    import uvicorn
+# if __name__ == "__main__":
 
-    uvicorn.run(app, host="0.0.0.0", port=8001, log_level="debug")
+#     import uvicorn
+
+#     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)

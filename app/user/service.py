@@ -4,8 +4,8 @@ import email_validator as _email_check
 import fastapi as _fastapi
 import fastapi.security as _security
 import app.core.db.session as _database
-import schema as _schemas
-import models as _models
+import app.user.schema as _schemas
+import app.user.models as _models
 import random
 import json
 import pika
@@ -15,7 +15,7 @@ import bcrypt as _bcrypt
 
 # Load environment variables
 JWT_SECRET = os.getenv("JWT_SECRET")
-oauth2schema = _security.OAuth2PasswordBearer("/api/token")
+oauth2schema = _security.OAuth2PasswordBearer("/token")
 
 
 def create_database():
@@ -36,6 +36,7 @@ def hash_password(password):
 
 async def get_user_by_email(email: str, db: _orm.Session):
     # Retrieve a user by email from the database
+    print("Email: ", email)
     return db.query(_models.User).filter(_models.User.email == email).first()
 
 async def create_user(user: _schemas.UserCreate, db: _orm.Session):
@@ -47,7 +48,8 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
         raise _fastapi.HTTPException(status_code=400, detail="Please enter a valid email")
 
     hashed_password = hash_password(user.password)
-    user_obj = _models.User(email=email, username=user.username, password=hashed_password)
+    print("Hashed Password: ", hashed_password)
+    user_obj = _models.User(email=email, username=user.name, hashed_password=hashed_password)
     db.add(user_obj)
     db.commit()
     db.refresh(user_obj)
@@ -60,8 +62,8 @@ async def authenticate_user(email: str, password: str, db: _orm.Session):
     if not user:
         return False
     
-    if not user.is_verified:
-        return 'is_verified_false'
+    # if not user.is_verified:
+    #     return 'is_verified_false'
     
     if not user.verify_password(password):
         return False

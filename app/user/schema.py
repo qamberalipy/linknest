@@ -1,21 +1,33 @@
-from pydantic import BaseModel, Field
+import pydantic
+import datetime
 
-
-class UserCreate(BaseModel):
-    username: str = Field(example="Joe")
-    password: str = Field(example="123456")
-    email: str = Field(example="joe@gmail.com")
-
-
-class UserSchema(BaseModel):
-    id: int
-    username: str
+class UserBase(pydantic.BaseModel):
+    name: str
     email: str
-
     class Config:
-        orm_mode = True
+       from_attributes=True
 
+class UserCreate(UserBase):
+    password: str
+    date_created: datetime.datetime
+    class Config:
+       from_attributes=True
 
-class UserLogin(BaseModel):
-    email: str = Field(example="joe@gmail.com")
-    password: str = Field(example="123456")
+class User(UserBase):
+    id: int
+    date_created: datetime.datetime
+    class Config:
+       from_attributes=True
+
+class GenerateUserToken(pydantic.BaseModel):
+    email: str
+    password: str
+    class Config:
+       from_attributes=True
+
+class GenerateOtp(pydantic.BaseModel):
+    email: str
+    
+class VerifyOtp(pydantic.BaseModel):
+    email: str
+    otp: int
