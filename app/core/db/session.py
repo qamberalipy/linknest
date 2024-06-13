@@ -13,10 +13,10 @@ postgres_host = os.environ.get("POSTGRES_HOST")
 postgres_db = os.environ.get("POSTGRES_DB")
 postgres_user = os.environ.get("POSTGRES_USER")
 postgres_password = os.environ.get("POSTGRES_PASSWORD")
-
+postgres_port = os.environ.get("POSTGRES_PORT")
 
 # Assuming your PostgreSQL server is running locally with a database named 'mydatabase'
-DATABASE_URL = f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}/{postgres_db}"
+DATABASE_URL = f"postgresql://postgres:12@localhost:5433/lets_move_db"
 
 
 engine = _sql.create_engine(DATABASE_URL)

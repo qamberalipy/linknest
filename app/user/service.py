@@ -49,7 +49,8 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
 
     hashed_password = hash_password(user.password)
     print("Hashed Password: ", hashed_password)
-    user_obj = _models.User(email=email, username=user.name, hashed_password=hashed_password)
+    print("In Create User: ", email, user.username, hashed_password)
+    user_obj = _models.User(email=email, username=user.username, hashed_password=hashed_password)
     db.add(user_obj)
     db.commit()
     db.refresh(user_obj)
@@ -72,8 +73,9 @@ async def authenticate_user(email: str, password: str, db: _orm.Session):
 
 async def create_token(user: _models.User):
     # Create a JWT token for authentication
-    user_obj = _schemas.UserSchema.from_orm(user)
+    user_obj = _schemas.User.from_orm(user)
     user_dict = user_obj.dict()
+    print(user_dict)
     del user_dict["date_created"]
     token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
     return dict(access_token=token, token_type="bearer")

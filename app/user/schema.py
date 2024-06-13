@@ -2,7 +2,7 @@ import pydantic
 import datetime
 
 class UserBase(pydantic.BaseModel):
-    name: str
+    username: str
     email: str
     class Config:
        from_attributes=True

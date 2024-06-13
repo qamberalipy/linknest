@@ -5,9 +5,9 @@ import app.core.db.session as _database
 import bcrypt as _bcrypt
 import sqlalchemy.ext.declarative as _declarative
 
-Base = _declarative.declarative_base()
+# Base = _declarative.declarative_base()
 
-class User(Base):
+class User(_database.Base):
     __tablename__ = "users"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
     username = _sql.Column(_sql.String)
