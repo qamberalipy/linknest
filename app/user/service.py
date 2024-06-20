@@ -12,6 +12,7 @@ import pika
 import time
 import os
 import bcrypt as _bcrypt
+from . import models, schema
 
 # Load environment variables
 JWT_SECRET = os.getenv("JWT_SECRET")
@@ -92,3 +93,20 @@ async def get_current_user(db: _orm.Session = _fastapi.Depends(get_db), token: s
 def generate_otp():
     # Generate a random OTP
     return str(random.randint(100000, 999999))
+
+async def get_user_by_email(email: str, db: _orm.Session = _fastapi.Depends(get_db)):
+    return db.query(models.User).filter(models.User.email == email).first()
+
+async def create_client(client: _schemas.ClientCreate, db: _orm.Session = _fastapi.Depends(get_db)):
+    db_client = models.Client(**client.dict())
+    db.add(db_client)
+    db.commit()
+    db.refresh(db_client)
+    return db_client
+
+async def authenticate_client(email: str, password: str, db: _orm.Session = _fastapi.Depends(get_db)):
+    client = await db.query(models.Client).filter(models.Client.email_address == email).first()
+    if not client or not _bcrypt.checkpw(password.encode('utf-8'), client.password.encode('utf-8')):
+        return None
+    return client
+

@@ -1,5 +1,7 @@
 import pydantic
 import datetime
+from datetime import date
+from typing import Optional
 
 class UserBase(pydantic.BaseModel):
     username: str
@@ -31,3 +33,39 @@ class GenerateOtp(pydantic.BaseModel):
 class VerifyOtp(pydantic.BaseModel):
     email: str
     otp: int
+
+class ClientBase(pydantic.BaseModel):
+    own_member_id: str
+    first_name: str
+    last_name: str
+    sex: str
+    date_of_birth: date
+    email_address: str
+    landline_number: Optional[str] = None
+    mobile_number: Optional[str] = None
+    client_since: date
+    subscription_reason: Optional[str] = None
+    source: Optional[str] = None
+    language: Optional[str] = None
+    is_business: bool = False
+    country: Optional[str] = None
+    city: Optional[str] = None
+    zip_code: Optional[str] = None
+    address: Optional[str] = None
+    bank_detail_id: Optional[str] = None
+
+class ClientCreate(ClientBase):
+    pass
+
+class ClientRead(ClientBase):
+    id: int
+    
+    class Config:
+        from_attributes=True
+
+class ClientLogin(pydantic.BaseModel):
+    email_address: str
+    password: str
+
+    
+ 
