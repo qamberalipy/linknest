@@ -29,9 +29,8 @@ class Client(_database.Base):
     __tablename__ = "client"
     
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    username = _sql.Column(_sql.String(255), nullable=False)
-    wallet_address = _sql.Column(_sql.String(255), nullable=False)
-    profile_url=_sql.Column(_sql.String(255))
+    wallet_address = _sql.Column(_sql.String(255))
+    profile_url=_sql.Column(_sql.String)
     own_member_id = _sql.Column(_sql.String(255), nullable=False)
     first_name = _sql.Column(_sql.String(255), nullable=False)
     last_name = _sql.Column(_sql.String(255), nullable=False)
@@ -48,8 +47,8 @@ class Client(_database.Base):
     country = _sql.Column(_sql.String(255))
     city = _sql.Column(_sql.String(255))
     zip_code = _sql.Column(_sql.String(255))
-    address = _sql.Column(_sql.String(255))
-    bank_detail_id = _sql.Column(_sql.String(255))
+    address = _sql.Column(_sql.String)
+  
 
 class BankAccount(_database.Base):
     __tablename__ = "bank_account"

@@ -60,12 +60,14 @@ class ClientBase(pydantic.BaseModel):
     city: Optional[str] = None
     zip_code: Optional[str] = None
     address: Optional[str] = None
-    bank_account_number: Optional[str] = None
-    bic_swift_code: Optional[str] = None
-    bank_account_holder_name: Optional[str] = None
-    bank_name: Optional[str] = None
+    
 
 class ClientCreate(ClientBase):
+    org_id:int
+    class Config:
+        from_attributes=True
+
+class RegisterClient(ClientBase):
     pass
 
 class ClientRead(ClientBase):
@@ -74,6 +76,13 @@ class ClientRead(ClientBase):
     class Config:
         from_attributes=True
 
+class Client_Organization(pydantic.BaseModel):
+    client_id: int
+    org_id: int
+
+class CreateClient_Organization(Client_Organization):
+    pass
+    
 class ClientLogin(pydantic.BaseModel):
     email_address: str
     wallet_address: str

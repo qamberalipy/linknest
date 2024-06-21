@@ -107,12 +107,21 @@ def generate_otp():
 async def get_user_by_email(email: str, db: _orm.Session = _fastapi.Depends(get_db)):
     return db.query(models.User).filter(models.User.email == email).first()
 
-async def create_client(client: _schemas.ClientCreate, db: _orm.Session = _fastapi.Depends(get_db)):
+async def create_client(client: _schemas.RegisterClient, db: _orm.Session = _fastapi.Depends(get_db)):
     db_client = models.Client(**client.dict())
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
     return db_client
+
+async def create_client_organization(client_organization: _schemas.CreateClient_Organization,  db: _orm.Session = _fastapi.Depends(get_db)):
+    db_client_organization = models.Client_Organization(**client_organization.dict())
+    db.add(db_client_organization)
+    db.commit()
+    db.refresh(db_client_organization)
+    return db_client_organization
+
+
 
 async def create_bank_account(bank_account:_schemas.BankAccountCreate,db: _orm.Session = _fastapi.Depends(get_db)):
     db_bank_account = models.BankAccount(**bank_account.dict())
@@ -122,7 +131,7 @@ async def create_bank_account(bank_account:_schemas.BankAccountCreate,db: _orm.S
     return db_bank_account
 
 async def authenticate_client(email: str, wallet_address : str ,db: _orm.Session = _fastapi.Depends(get_db)):
-    client = await db.query(models.Client).filter(models.Client.email_address == email).first()
+    client = db.query(models.Client).filter(models.Client.email_address == email).first()
     if not client:
         return None
     
