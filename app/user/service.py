@@ -40,8 +40,7 @@ async def get_user_by_email(email: str, db: _orm.Session):
     print("Email: ", email)
     return db.query(_models.User).filter(_models.User.email == email).first()
 
-async def create_user(user: _schemas.UserCreate, db: _orm.Session):
-    # Create a new user in the database
+async def create_user(user: _schemas.UserRegister, db: _orm.Session):
     try:
         valid = _email_check.validate_email(user.email)
         email = valid.email
@@ -49,13 +48,24 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
         raise _fastapi.HTTPException(status_code=400, detail="Please enter a valid email")
 
     hashed_password = hash_password(user.password)
-    print("Hashed Password: ", hashed_password)
-    print("In Create User: ", email, user.username, hashed_password)
-    user_obj = _models.User(email=email, username=user.username, password=hashed_password)
+    user_obj = _models.User(
+        email=email, 
+        username=user.username, 
+        password=hashed_password,
+        org_id=user.org_id
+    )
     db.add(user_obj)
     db.commit()
     db.refresh(user_obj)
     return user_obj
+
+async def create_organization(organization: _schemas.OrganizationCreate, db: _orm.Session = _fastapi.Depends(get_db)):
+    org = _models.Organization(org_name=organization.org_name)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    return org
+
 
 async def authenticate_user(email: str, password: str, db: _orm.Session):
     # Authenticate a user
@@ -116,4 +126,3 @@ async def authenticate_client(email: str, password: str, db: _orm.Session = _fas
     if not client or not _bcrypt.checkpw(password.encode('utf-8'), client.password.encode('utf-8')):
         return None
     return client
-

@@ -7,19 +7,26 @@ class UserBase(pydantic.BaseModel):
     username: str
     email: str
     class Config:
-       from_attributes=True
+        from_attributes=True
 
-class UserCreate(UserBase):
+class UserCreate(UserBase): 
+    password: str
+    org_name: str
+    class Config:
+        from_attributes=True
+       
+class UserRegister(UserBase):
     password: str
     date_created: datetime.datetime
+    org_id: int
     class Config:
-       from_attributes=True
+        from_attributes=True
 
 class User(UserBase):
     id: int
     date_created: datetime.datetime
     class Config:
-       from_attributes=True
+        from_attributes=True
 
 class GenerateUserToken(pydantic.BaseModel):
     email: str
@@ -35,6 +42,7 @@ class VerifyOtp(pydantic.BaseModel):
     otp: int
 
 class ClientBase(pydantic.BaseModel):
+    profile_url:str
     own_member_id: str
     first_name: str
     last_name: str
@@ -76,4 +84,5 @@ class BankAccountCreate(pydantic.BaseModel):
     bank_account_holder_name: str
     bank_name: str
     
- 
+class OrganizationCreate(pydantic.BaseModel):
+    org_name: str

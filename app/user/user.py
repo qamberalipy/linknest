@@ -8,6 +8,7 @@ import app.user.service as _services
 import app.core.db.session as _database
 import pika
 import logging
+import datetime
 
 router = APIRouter()
 
@@ -31,7 +32,18 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
     print("Here 2")
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return await _services.create_user(user, db)
+    
+    organization_details = _schemas.OrganizationCreate(org_name=user.org_name)
+    organization = await _services.create_organization(organization_details, db)
+
+    user_data = user.dict()
+    user_data['org_id'] = organization.id
+    user_data.pop('org_name')
+
+    user_register = _schemas.UserRegister(**user_data, date_created=datetime.datetime.utcnow())
+    new_user = await _services.create_user(user_register, db)
+    
+    return new_user
 
 @router.post("/register/client", response_model=_schemas.ClientRead)
 async def register_client(client: _schemas.ClientCreate,db: _orm.Session = Depends(get_db)):    
@@ -43,27 +55,27 @@ async def register_client(client: _schemas.ClientCreate,db: _orm.Session = Depen
             raise HTTPException(status_code=400, detail="Email already registered")
 
         # Separate bank details
-        bank_details = _schemas.BankAccountCreate(
-            bank_account_number=client.bank_account_number,
-            bic_swift_code=client.bic_swift_code,
-            bank_account_holder_name=client.bank_account_holder_name,
-            bank_name=client.bank_name
-        )
+        # bank_details = _schemas.BankAccountCreate(
+        #     bank_account_number=client.bank_account_number,
+        #     bic_swift_code=client.bic_swift_code,
+        #     bank_account_holder_name=client.bank_account_holder_name,
+        #     bank_name=client.bank_name
+        # )
 
         # Create bank account entry
-        bank_account = await _services.create_bank_account(bank_details, db)
+        # bank_account = await _services.create_bank_account(bank_details, db)
 
         # Create client entry with the bank account ID
-        client_data = client.dict()
-        client_data['bank_detail_id'] = bank_account.id
+        # client_data = client.dict()
+        # client_data['bank_detail_id'] = bank_account.id
 
         # Remove bank details from client data
-        client_data.pop('bank_account_number')
-        client_data.pop('bic_swift_code')
-        client_data.pop('bank_account_holder_name')
-        client_data.pop('bank_name')
+        # client_data.pop('bank_account_number')
+        # client_data.pop('bic_swift_code')
+        # client_data.pop('bank_account_holder_name')
+        # client_data.pop('bank_name')
 
-        new_client = await _services.create_client(_schemas.ClientCreate(**client_data), db)
+        new_client = await _services.create_client(_schemas.ClientCreate(**client), db)
         return new_client
 
     except IntegrityError:
