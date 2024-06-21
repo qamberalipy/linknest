@@ -104,6 +104,13 @@ async def create_client(client: _schemas.ClientCreate, db: _orm.Session = _fasta
     db.refresh(db_client)
     return db_client
 
+async def create_bank_account(bank_account:_schemas.BankAccountCreate,db: _orm.Session = _fastapi.Depends(get_db)):
+    db_bank_account = models.BankAccount(**bank_account.dict())
+    db.add(db_bank_account)
+    db.commit()
+    db.refresh(db_bank_account)
+    return db_bank_account
+
 async def authenticate_client(email: str, password: str, db: _orm.Session = _fastapi.Depends(get_db)):
     client = await db.query(models.Client).filter(models.Client.email_address == email).first()
     if not client or not _bcrypt.checkpw(password.encode('utf-8'), client.password.encode('utf-8')):

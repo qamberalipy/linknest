@@ -53,7 +53,6 @@ class BankAccount(_database.Base):
     __tablename__ = "bank_accounts"
     
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    client_id = _sql.Column(_sql.Integer,_sql.ForeignKey('client.id'), nullable=False)
     bank_account_number = _sql.Column(_sql.String(255), nullable=False)
     bic_swift_code = _sql.Column(_sql.String(255), nullable=False)
     bank_account_holder_name = _sql.Column(_sql.String(255), nullable=False)

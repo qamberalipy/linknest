@@ -52,7 +52,10 @@ class ClientBase(pydantic.BaseModel):
     city: Optional[str] = None
     zip_code: Optional[str] = None
     address: Optional[str] = None
-    bank_detail_id: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bic_swift_code: Optional[str] = None
+    bank_account_holder_name: Optional[str] = None
+    bank_name: Optional[str] = None
 
 class ClientCreate(ClientBase):
     pass
@@ -67,5 +70,10 @@ class ClientLogin(pydantic.BaseModel):
     email_address: str
     password: str
 
+class BankAccountCreate(pydantic.BaseModel):
+    bank_account_number: str
+    bic_swift_code: str
+    bank_account_holder_name: str
+    bank_name: str
     
  

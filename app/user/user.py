@@ -34,26 +34,71 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
     return await _services.create_user(user, db)
 
 @router.post("/register/client", response_model=_schemas.ClientRead)
-async def register_client(client: _schemas.ClientCreate,  db: _orm.Session = Depends(get_db)):
+async def register_client(client: _schemas.ClientCreate,db: _orm.Session = Depends(get_db)):    
+
     try:
+        # Check if the email is already registered
         db_client = await _services.get_user_by_email(client.email_address, db)
         if db_client:
             raise HTTPException(status_code=400, detail="Email already registered")
-        
-        new_client = await _services.create_client(client, db)
+
+        # Separate bank details
+        bank_details = _schemas.BankAccountCreate(
+            bank_account_number=client.bank_account_number,
+            bic_swift_code=client.bic_swift_code,
+            bank_account_holder_name=client.bank_account_holder_name,
+            bank_name=client.bank_name
+        )
+
+        # Create bank account entry
+        bank_account = await _services.create_bank_account(bank_details, db)
+
+        # Create client entry with the bank account ID
+        client_data = client.dict()
+        client_data['bank_detail_id'] = bank_account.id
+
+        # Remove bank details from client data
+        client_data.pop('bank_account_number')
+        client_data.pop('bic_swift_code')
+        client_data.pop('bank_account_holder_name')
+        client_data.pop('bank_name')
+
+        new_client = await _services.create_client(_schemas.ClientCreate(**client_data), db)
         return new_client
-        
+
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
-    
+
     except DataError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
-    
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+# @router.post("/register/client", response_model=_schemas.ClientRead)
+# async def register_client(client: _schemas.ClientCreate,  db: _orm.Session = Depends(get_db)):
+#     try:
+#         db_client = await _services.get_user_by_email(client.email_address, db)
+#         if db_client:
+#             raise HTTPException(status_code=400, detail="Email already registered")
+        
+#         new_client = await _services.create_client(client, db)
+#         return new_client
+        
+#     except IntegrityError:
+#         db.rollback()
+#         raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
+    
+#     except DataError:
+#         db.rollback()
+#         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+    
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 @router.post("/login")
 async def login(user: _schemas.GenerateUserToken,db: _orm.Session = Depends(get_db)):
