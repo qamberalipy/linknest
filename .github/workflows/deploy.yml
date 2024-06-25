@@ -38,7 +38,7 @@ jobs:
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
-        key_path: /tmp/ssh_key
+        key: /tmp/ssh_key
         script: |
           sudo docker pull qasimshabbir786/lets-move-api-dh:latest
           sudo docker-compose -f /home/ubuntu/lets_move/docker-compose.yml up -d
