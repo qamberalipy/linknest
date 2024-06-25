@@ -30,15 +30,15 @@ jobs:
 
     - name: Decode SSH Key
       run: |
-        echo "${{ secrets.EC2_SSH_KEY }}" | base64 --decode > /tmp/ssh_key.pem
-        chmod 600 /tmp/ssh_key.pem
+        echo "${{ secrets.EC2_SSH_KEY }}" | base64 --decode > ~/.ssh/ssh_key
+        chmod 600 ~/.ssh/ssh_key
 
     - name: SSH and update Docker container
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
-        key_path: /tmp/ssh_key.pem
+        key_path: ~/.ssh/ssh_key
         script: |
           sudo docker pull qasimshabbir786/lets-move-api-dh:latest
           sudo docker-compose -f /home/ubuntu/lets_move/docker-compose.yml up -d
