@@ -10,6 +10,12 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      INSTANCE_ID: ${{ secrets.INSTANCE_ID }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -28,17 +34,5 @@ jobs:
         docker build -t qasimshabbir786/lets-move-api-dh:latest .
         docker push qasimshabbir786/lets-move-api-dh:latest
 
-    - name: Decode SSH Key
-      run: |
-        echo "${{ secrets.EC2_SSH_KEY }}" | base64 --decode > ~/.ssh/ssh_key
-        chmod 600 ~/.ssh/ssh_key
-
-    - name: SSH and update Docker container
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key_path: ~/.ssh/ssh_key
-        script: |
-          sudo docker pull qasimshabbir786/lets-move-api-dh:latest
-          sudo docker-compose -f /home/ubuntu/lets_move/docker-compose.yml up -d
+    - name: Send to SSM
+      run: aws ssm send-command --document-name "AWS-RunShellScript" --region="$AWS_REGION" --targets "Key=instanceids,Values=$INSTANCE_ID" --cli-input-json file://deploy_json/master_deploy.json --debug
