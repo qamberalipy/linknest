@@ -1,24 +1,20 @@
-FROM python:3.10-slim-bullseye
-LABEL Lets Move
+# Use the official Python image from the Docker Hub
+FROM python:3.11-slim
 
-RUN apt-get update \
-    # && apt-get -y install libpq-dev gcc curl procps net-tools tini \
-    # && apt-get -y clean \
-    # && rm -rf /var/lib/apt/lists/* \
-    && pip install gunicorn \ 
-    && pip install -r requirements.txt
-
-ENV POETRY_HOME=/tmp/poetry
-RUN curl -sSL https://install.python-poetry.org/ | python3 -
-ENV PATH=$POETRY_HOME/bin:$PATH
-ENV PYTHONFAULTHANDLER=1
-ENV PYTHONUNBUFFERED=1
-
+# Set the working directory in the container
 WORKDIR /app
-COPY . /app
 
-RUN poetry self update \ 
-  && poetry config virtualenvs.create false \
-  && poetry install --no-dev --only main
-  
-EXPOSE 8000 
+# Copy the requirements file to the working directory
+COPY requirements.txt .
+
+# Install the dependencies specified in the requirements file
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code to the working directory
+COPY . .
+
+# Specify the port number the container should expose
+EXPOSE 8000
+
+# Command to run the FastAPI application using uvicorn, ensuring the .env file is sourced
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
