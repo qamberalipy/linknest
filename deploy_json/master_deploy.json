@@ -1,0 +1,10 @@
+{
+    "Parameters": {
+        "commands": [
+            "#!/bin/bash", 
+            "runuser -l ubuntu -c 'cd /home/ubuntu/lets_move && docker pull qasimshabbir786/lets-move-api-dh:latest'",
+            "runuser -l ubuntu -c 'cd /home/ubuntu/lets_move && docker-compose -f docker-compose.yml up -d'"
+        ]
+    }
+}
+

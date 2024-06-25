@@ -46,40 +46,71 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
     return new_user
 
 @router.post("/register/client", response_model=_schemas.ClientRead)
-async def register_client(client: _schemas.ClientCreate, db: _orm.Session = Depends(get_db)):    
-    # Check if the email is already registered
+async def register_client(client: _schemas.ClientCreate,db: _orm.Session = Depends(get_db)):    
+
     try:
+        # Check if the email is already registered
         db_client = await _services.get_user_by_email(client.email_address, db)
         if db_client:
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        client_data = client.dict()
-        organization_id = client_data['org_id']
-        client_data.pop('org_id')
+        # Separate bank details
+        # bank_details = _schemas.BankAccountCreate(
+        #     bank_account_number=client.bank_account_number,
+        #     bic_swift_code=client.bic_swift_code,
+        #     bank_account_holder_name=client.bank_account_holder_name,
+        #     bank_name=client.bank_name
+        # )
 
-        new_client = await _services.create_client(_schemas.RegisterClient(**client_data), db)
-        client_organization_detail = _schemas.CreateClient_Organization(
-            client_id=new_client.id,
-            org_id=organization_id
-        )
-        
-        # Create the client organization entry
-        await _services.create_client_organization(client_organization_detail, db)
+        # Create bank account entry
+        # bank_account = await _services.create_bank_account(bank_details, db)
 
-        # Return the new client
+        # Create client entry with the bank account ID
+        # client_data = client.dict()
+        # client_data['bank_detail_id'] = bank_account.id
+
+        # Remove bank details from client data
+        # client_data.pop('bank_account_number')
+        # client_data.pop('bic_swift_code')
+        # client_data.pop('bank_account_holder_name')
+        # client_data.pop('bank_name')
+
+        new_client = await _services.create_client(_schemas.ClientCreate(**client), db)
         return new_client
-    
+
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
-    
+
     except DataError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
-    
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")   
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+# @router.post("/register/client", response_model=_schemas.ClientRead)
+# async def register_client(client: _schemas.ClientCreate,  db: _orm.Session = Depends(get_db)):
+#     try:
+#         db_client = await _services.get_user_by_email(client.email_address, db)
+#         if db_client:
+#             raise HTTPException(status_code=400, detail="Email already registered")
+        
+#         new_client = await _services.create_client(client, db)
+#         return new_client
+        
+#     except IntegrityError:
+#         db.rollback()
+#         raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
+    
+#     except DataError:
+#         db.rollback()
+#         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+    
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
 @router.post("/login")
@@ -96,6 +127,7 @@ async def login(user: _schemas.GenerateUserToken,db: _orm.Session = Depends(get_
         "token": token
     }
 
+
 @router.post("/login/client", response_model=dict)
 async def login_client(client_login: _schemas.ClientLogin, db: _orm.Session = Depends(get_db)):
     logger.debug("Here 1", client_login.email_address, client_login.wallet_address)
@@ -107,3 +139,10 @@ async def login_client(client_login: _schemas.ClientLogin, db: _orm.Session = De
     
     token = await _services.create_token(authenticated_client)
     return token
+
+@router.get("/clients/{client_id}", response_model=_schemas.ClientRead)
+async def get_client(client_id: int, db: _orm.Session = Depends(get_db)):
+    client = await _services.get_client_by_id(client_id, db)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return client

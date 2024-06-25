@@ -67,20 +67,6 @@ async def create_organization(organization: _schemas.OrganizationCreate, db: _or
     return org
 
 
-async def authenticate_user(email: str, password: str, db: _orm.Session):
-    # Authenticate a user
-    user = await get_user_by_email(email=email, db=db)
-
-    if not user:
-        return False
-    
-    # if not user.is_verified:
-    #     return 'is_verified_false'
-    
-    if not user.verify_password(password):
-        return False
-
-    return user
 
 async def create_token(user: _models.User):
     # Create a JWT token for authentication
@@ -128,14 +114,30 @@ async def create_bank_account(bank_account:_schemas.BankAccountCreate,db: _orm.S
     db.refresh(db_bank_account)
     return db_bank_account
 
-async def authenticate_client(email: str, wallet_address : str ,db: _orm.Session = _fastapi.Depends(get_db)):
-    client = db.query(models.Client).filter(models.Client.email_address == email).first()
+def get_client_by_email(email_address,db):
+    client = db.query(_models.Client).filter(_models.Client.email_address == email_address).first()
+    print("client",client.email_address,client.wallet_address)
     if not client:
         return None
+    else:
+        return client
     
-    if not client.wallet_address:
-        client.wallet_address = wallet_address
-        db.commit()
-        db.refresh(client)
-        
+async def authenticate_client(email_address: str,db: _orm.Session = _fastapi.Depends(get_db)):
+    client = get_client_by_email(email_address , db)
+      
+    if not client:
+        return False
+   
     return client
+        
+async def authenticate_user(email: str, password: str, db: _orm.Session):
+    # Authenticate a user
+    user = await get_user_by_email(email=email, db=db)
+
+    if not user:
+        return False
+   
+    if not user.verify_password(password):
+        return False
+
+    return user
