@@ -6,10 +6,8 @@ import app.core.db.session as _database
 import bcrypt as _bcrypt
 import sqlalchemy.ext.declarative as _declarative
 
-# Base = _declarative.declarative_base()
-
 class User(_database.Base):
-    __tablename__ = "organization_users"
+    __tablename__ = "staff"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     username = _sql.Column(_sql.String)
     password = _sql.Column(_sql.String)
@@ -23,35 +21,30 @@ class User(_database.Base):
         return _bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
 
     
-
-class Leads(_database.Base):
-    __tablename__ = "leads"
+class UserMembership(_database.Base):
+    __tablename__ = "user_membership"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    first_name = _sql.Column(_sql.String)
-    last_name = _sql.Column(_sql.String)
-    email = _sql.Column(_sql.String)
-    mobile_number = _sql.Column(_sql.String)
-    home_number = _sql.Column(_sql.String)
-    lead_owner = _sql.Column(_sql.String)
-    status = _sql.Column(_sql.String)
-    source = _sql.Column(_sql.String)
-    lead_since = _sql.Column(_sql.Date)
+    user_id = _sql.Column(_sql.Integer)
+    membership_plan_id = _sql.Column(_sql.Integer)
+    start_date = _sql.Column(_sql.Date)
+    end_date = _sql.Column(_sql.Date)
+    is_deleted= _sql.Column(_sql.Boolean, default=False)
+
+class Country(_database.Base):
+    __tablename__ = "country"
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True)
+    country = _sql.Column(_sql.String)
+    country_code = _sql.Column(_sql.Integer)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     
-class BankAccount(_database.Base):
-    __tablename__ = "bank_account"
+class Source(_database.Base):
+    __tablename__ = "source"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    bank_account_number = _sql.Column(_sql.String, nullable=False)
-    bic_swift_code = _sql.Column(_sql.String, nullable=False)
-    bank_account_holder_name = _sql.Column(_sql.String, nullable=False)
-    bank_name = _sql.Column(_sql.String, nullable=False)
-    is_deleted= _sql.Column(_sql.Boolean, default=False)
+    source = _sql.Column(_sql.String)
+    
 
 class Organization(_database.Base):
     __tablename__ = "organization"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     org_name = _sql.Column(_sql.String, nullable=False)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
-
-
-_database.Base.metadata.create_all(_database.engine)
