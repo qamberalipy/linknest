@@ -84,7 +84,7 @@ async def get_client(client_id: int, db: _orm.Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Client not found")
     return client
 
-@router.get("/business/clients/{org_id}", response_model=List[_schemas.ClientBusinessRead], tags=["Business Client"])
+@router.get("/business/clients/{org_id}", response_model=List[_schemas.ClientBusinessRead], tags=["Client Router"])
 async def get_business_clients(org_id: int,db: _orm.Session = Depends(get_db)):
     try:
         clients = await _services.get_business_clients(org_id, db)
@@ -93,6 +93,12 @@ async def get_business_clients(org_id: int,db: _orm.Session = Depends(get_db)):
         return clients
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-
-
+    
+@router.get("/organization/{org_id}/clients/count", response_model=_schemas.ClientCount, tags=["Client Router"])
+async def get_total_clients(org_id: int, db: _orm.Session = Depends(get_db)):
+    try:
+        total_clients = await _services.get_total_clients(org_id, db)
+        return {"total_clients": total_clients}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 

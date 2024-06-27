@@ -1,5 +1,6 @@
 from datetime import date
 import jwt
+from sqlalchemy import func
 import sqlalchemy.orm as _orm
 from sqlalchemy.sql import and_  
 import email_validator as _email_check
@@ -90,3 +91,14 @@ async def get_business_clients(org_id: int, db: _orm.Session = _fastapi.Depends(
     ).all()
 
     return clients
+
+
+async def get_total_clients(org_id: int, db: _orm.Session = _fastapi.Depends(get_db)) -> int:
+    total_clients = db.query(func.count(models.Client.id)).join(
+        models.ClientOrganization,
+        models.ClientOrganization.client_id == models.Client.id
+    ).filter(
+        models.ClientOrganization.org_id == org_id
+    ).scalar()
+    
+    return total_clients
