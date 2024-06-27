@@ -88,3 +88,6 @@ class ClientBusinessRead(pydantic.BaseModel):
 
     class Config:
         from_attributes = True
+        
+class ClientCount(pydantic.BaseModel):
+    total_clients: int
