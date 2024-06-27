@@ -1,5 +1,5 @@
-from typing import List, Dict
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Header
+from typing import Dict, List
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError, DataError
 import app.user.schema as _schemas
 import sqlalchemy.orm as _orm
