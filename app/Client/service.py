@@ -79,3 +79,9 @@ def get_client_by_email(email_address,db):
     else:
         return client
     
+# def get_businesses_by_org_id(org_id: int, db: _orm.Session):
+#     return db.query(_models.Business).filter(
+#         models.Business.org_id == org_id,
+#         models.Business.is_deleted == False
+#     ).all()
+    

@@ -7,7 +7,6 @@ from app.core.main_router import router as main_router
 from app.user import user_router
 from app.Client import client_router
 from app.Membership import membership_router
-from app.Business import business_router
 from app.Coach import coach_router
 # from app.core.logger import init_logging
 # import logging

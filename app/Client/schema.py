@@ -4,26 +4,28 @@ from datetime import date
 from typing import Optional
 
 class ClientBase(pydantic.BaseModel):
-    profile_url:str
+    profile_img: str
     own_member_id: str
     first_name: str
     last_name: str
-    sex: str
-    date_of_birth: date
+    gender: str
+    dob: date
     email_address: str
-    landline_number: Optional[str] = None
+    phone: Optional[str] = None
     mobile_number: Optional[str] = None
-    client_since: date
     notes: Optional[str] = None
-    source: Optional[str] = None
+    source_id: Optional[int] = None
     language: Optional[str] = None
     is_business: bool = False
-    country: Optional[str] = None
+    country_id: Optional[int] = None
     city: Optional[str] = None
     zip_code: Optional[str] = None
-    address: Optional[str] = None
-
-
+    address_1: Optional[str] = None
+    address_2: Optional[str] = None
+    client_since: Optional[date] = None
+    created_at: Optional[date] = None
+    created_by: Optional[int] = None
+    
 class ClientCreate(ClientBase):
     org_id:int
     coach_id:int
@@ -64,3 +66,17 @@ class CreateClient_coach(Client_coach):
 class ClientLogin(pydantic.BaseModel):
     email_address: str
     wallet_address: str
+    
+class BusinessBase(pydantic.BaseModel):
+    name: str
+    address: str
+    email: str
+    org_id: int
+
+
+class BusinessRead(BusinessBase):
+    id: int
+    date_created: date
+
+    class Config:
+        from_attributes = True  
