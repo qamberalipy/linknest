@@ -10,7 +10,7 @@ class ClientBase(pydantic.BaseModel):
     last_name: str
     gender: str
     dob: date
-    email_address: str
+    email: str
     phone: Optional[str] = None
     mobile_number: Optional[str] = None
     notes: Optional[str] = None

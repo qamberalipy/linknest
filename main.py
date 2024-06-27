@@ -26,7 +26,6 @@ app.add_middleware(CORSMiddleware,
 
 app.include_router(main_router)
 app.include_router(user_router)
-app.include_router(business_router)
 app.include_router(client_router)
 app.include_router(coach_router)
 app.include_router(membership_router)
