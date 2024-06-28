@@ -47,7 +47,7 @@ async def register_client(client: _schemas.ClientCreate, db: _orm.Session = Depe
 
         new_client = await _services.create_client(_schemas.RegisterClient(**client_data), db)
 
-        await _services.create_client_organization(_schemas.CreateClientOrganization(client_id=new_client.id,org_id=organization_id,status=status), db)
+        await _services.create_client_organization(_schemas.CreateClientOrganization(client_id=new_client.id,org_id=organization_id,client_status=status), db)
         await _services.create_client_membership(_schemas.CreateClientMembership(client_id=new_client.id,membership_plan_id=membership_id), db)
         await _services.create_client_coach(_schemas.CreateClientCoach(client_id=new_client.id,coach_id=coach_id), db)
         

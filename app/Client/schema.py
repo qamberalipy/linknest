@@ -31,10 +31,12 @@ class ClientCreate(ClientBase):
     org_id: int
     coach_id: int
     membership_id: int
-    status=str
-    send_invitation:bool
+    status: str  # Corrected type annotation
+    send_invitation: bool
+    
     class Config:
-        from_attributes=True
+        from_attributes = True
+
 
 class RegisterClient(ClientBase):
     pass
@@ -48,7 +50,7 @@ class ClientRead(ClientBase):
 class ClientOrganization(pydantic.BaseModel):
     client_id: int
     org_id: int
-    status:str
+    client_status:str
 
 class CreateClientOrganization(ClientOrganization):
     pass
