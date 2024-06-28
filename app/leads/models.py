@@ -16,6 +16,7 @@ class Leads(_database.Base):
     staff_id = _sql.Column(_sql.Integer)
     status = _sql.Column(_sql.String)
     source_id = _sql.Column(_sql.Integer)
+    org_id=_sql.Column(_sql.Integer)
     lead_since = _sql.Column(_sql.Date)
     notes=_sql.Column(_sql.String,nullable=True)
     created_at= _sql.Column(_sql.DateTime,default=_dt.datetime.now)
@@ -23,3 +24,4 @@ class Leads(_database.Base):
     created_by= _sql.Column(_sql.Integer)
     updated_by= _sql.Column(_sql.Integer)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
+

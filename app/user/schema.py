@@ -49,6 +49,16 @@ class BankAccountCreate(pydantic.BaseModel):
     
 class OrganizationCreate(pydantic.BaseModel):
     org_name: str
+
+class getStaff(pydantic.BaseModel):
+    
+    org_id:int
+    id:Optional[int]
+    name:Optional[str]
+    class Config:
+       from_attributes=True
+
+    
     
     
 class CountryRead(pydantic.BaseModel):

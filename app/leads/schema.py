@@ -1,6 +1,5 @@
 
 import pydantic
-import datetime
 from datetime import date
 from typing import Optional
 
@@ -12,6 +11,7 @@ class LeadBase(pydantic.BaseModel):
     status:str
     source_id:int
     lead_since:date
+    
    
 class LeadCreate(LeadBase):
     phone:str
@@ -19,10 +19,32 @@ class LeadCreate(LeadBase):
     notes:str
     created_by:int
     updated_by:int  
+    org_id:int
 
     class Config:
             from_attributes = True
 
-class LeadRead(LeadBase):
-    pass
+class LeadRead(pydantic.BaseModel):
+    org_id:int
+    first_name:Optional[str]
+    mobile:Optional[str]
+    owner:Optional[str]
+    status:Optional[str]
+    source:Optional[str]
+
+    class Config:
+            from_attributes = True
+
+    
+class ResponseLeadRead(pydantic.BaseModel):
+    first_name:Optional[str]
+    mobile:Optional[str]
+    status:Optional[str]
+    source:Optional[str]
+    owner:Optional[str]
+    lead_since:Optional[date]
+    class Config:
+            from_attributes = True
+
+    
     
