@@ -17,14 +17,14 @@ class UserCreate(UserBase):
        
 class UserRegister(UserBase):
     password: str
-    date_created: datetime.datetime
+    created_at: datetime.datetime
     org_id: int
     class Config:
         from_attributes=True
 
 class User(UserBase):
     id: int
-    date_created: datetime.datetime
+    created_at: datetime.datetime
     class Config:
         from_attributes=True
 
