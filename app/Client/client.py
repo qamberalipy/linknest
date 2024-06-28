@@ -37,16 +37,17 @@ async def register_client(client: _schemas.ClientCreate, db: _orm.Session = Depe
 
         client_data = client.dict()
         organization_id = client_data.get('org_id')
+        status=client_data.get('status')
         coach_id=client_data.get('coach_id')
         membership_id=client_data.get('membership_id')
         client_data.pop('org_id')
+        client_data.pop('status')
         client_data.pop('coach_id')
         client_data.pop('membership_id')
 
         new_client = await _services.create_client(_schemas.RegisterClient(**client_data), db)
 
-        
-        await _services.create_client_organization(_schemas.CreateClientOrganization(client_id=new_client.id,org_id=organization_id), db)
+        await _services.create_client_organization(_schemas.CreateClientOrganization(client_id=new_client.id,org_id=organization_id,client_status=status), db)
         await _services.create_client_membership(_schemas.CreateClientMembership(client_id=new_client.id,membership_plan_id=membership_id), db)
         await _services.create_client_coach(_schemas.CreateClientCoach(client_id=new_client.id,coach_id=coach_id), db)
         
@@ -64,35 +65,48 @@ async def register_client(client: _schemas.ClientCreate, db: _orm.Session = Depe
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
+@router.post("/login/client", response_model=_schemas.ClientLoginResponse,  tags=["Client Router"])
+async def login_client(email_address: str, wallet_address: str, db: _orm.Session = Depends(get_db)):
+    try:
+        result = await _services.login_client(email_address, wallet_address, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    
+# @router.post("/login/client", response_model=dict,tags=["Client Router"])
+# async def login_client(client_login: _schemas.ClientLogin, db: _orm.Session = Depends(get_db)):
+#     logger.debug("Here 1", client_login.email_address, client_login.wallet_address)
+    
+#     authenticated_client = await _services.authenticate_client(client_login.email_address, client_login.wallet_address, db)
+    
+#     if not authenticated_client:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    
+#     token = await _services.create_token(authenticated_client)
+#     return token
 
-@router.post("/login/client", response_model=dict,tags=["Client Router"])
-async def login_client(client_login: _schemas.ClientLogin, db: _orm.Session = Depends(get_db)):
-    logger.debug("Here 1", client_login.email_address, client_login.wallet_address)
-    
-    authenticated_client = await _services.authenticate_client(client_login.email_address, client_login.wallet_address, db)
-    
-    if not authenticated_client:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    
-    token = await _services.create_token(authenticated_client)
-    return token
-
-@router.get("/clients/{client_id}", response_model=_schemas.ClientRead)
+@router.get("/filter/", response_model=_schemas.ClientRead,tags=["Client Router"])
 async def get_client(client_id: int, db: _orm.Session = Depends(get_db)):
     client = await _services.get_client_by_id(client_id, db)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     return client
 
-@router.get("/business/clients/{org_id}", response_model=List[_schemas.ClientBusinessRead], tags=["Business Client"])
+@router.get("/business/clients/{org_id}", response_model=List[_schemas.ClientBusinessRead], tags=["Client Router"])
 async def get_business_clients(org_id: int,db: _orm.Session = Depends(get_db)):
     try:
         clients = await _services.get_business_clients(org_id, db)
         if not clients:
-            raise HTTPException(status_code=404, detail="No business clients found")
+            return []
         return clients
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-
-
+    
+@router.get("/organization/{org_id}/clients/count", response_model=_schemas.ClientCount, tags=["Client Router"])
+async def get_total_clients(org_id: int, db: _orm.Session = Depends(get_db)):
+    try:
+        total_clients = await _services.get_total_clients(org_id, db)
+        return {"total_clients": total_clients}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 

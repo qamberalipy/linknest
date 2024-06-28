@@ -52,6 +52,7 @@ class ClientOrganization(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
     client_id = _sql.Column(_sql.Integer)
     org_id = _sql.Column(_sql.Integer)
+    client_status=_sql.Column(_sql.String(100))
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     
     

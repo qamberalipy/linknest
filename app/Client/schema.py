@@ -31,8 +31,12 @@ class ClientCreate(ClientBase):
     org_id: int
     coach_id: int
     membership_id: int
+    status: str  # Corrected type annotation
+    send_invitation: bool
+    
     class Config:
-        from_attributes=True
+        from_attributes = True
+
 
 class RegisterClient(ClientBase):
     pass
@@ -46,6 +50,7 @@ class ClientRead(ClientBase):
 class ClientOrganization(pydantic.BaseModel):
     client_id: int
     org_id: int
+    client_status:str
 
 class CreateClientOrganization(ClientOrganization):
     pass
@@ -85,6 +90,12 @@ class BusinessRead(BusinessBase):
 class ClientBusinessRead(pydantic.BaseModel):
     id: int
     first_name: str
+        
+class ClientCount(pydantic.BaseModel):
+    total_clients: int
+    
+class ClientLoginResponse(pydantic.BaseModel):
+    is_registered: bool
 
-    class Config:
-        from_attributes = True
+# class ClientFilter(pydantic.BaseModel):
+    

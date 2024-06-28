@@ -1,5 +1,6 @@
 from datetime import date
 import jwt
+from sqlalchemy import func
 import sqlalchemy.orm as _orm
 from sqlalchemy.sql import and_  
 import email_validator as _email_check
@@ -70,12 +71,19 @@ async def authenticate_client(email_address: str, db: _orm.Session = _fastapi.De
    
     return client
 
-def get_client_by_email(email_address, db):
-    client = db.query(_models.Client).filter(_models.Client.email == email_address).first()
+async def login_client(email_address: str, wallet_address: str, db: _orm.Session = _fastapi.Depends(get_db)) -> dict:
+    client = get_client_by_email(email_address, db)
+    
     if not client:
-        return None
-    else:
-        return client
+        return {"is_registered": False}
+    
+    client.wallet_address = wallet_address
+    db.commit()
+    db.refresh(client)
+    return {"is_registered": True}
+
+def get_client_by_email(email_address: str, db: _orm.Session = _fastapi.Depends(get_db)) -> models.Client:
+    return db.query(models.Client).filter(models.Client.email == email_address).first()
     
 async def get_business_clients(org_id: int, db: _orm.Session = _fastapi.Depends(get_db)):
     clients = db.query(
@@ -90,3 +98,14 @@ async def get_business_clients(org_id: int, db: _orm.Session = _fastapi.Depends(
     ).all()
 
     return clients
+
+
+async def get_total_clients(org_id: int, db: _orm.Session = _fastapi.Depends(get_db)) -> int:
+    total_clients = db.query(func.count(models.Client.id)).join(
+        models.ClientOrganization,
+        models.ClientOrganization.client_id == models.Client.id
+    ).filter(
+        models.ClientOrganization.org_id == org_id
+    ).scalar()
+    
+    return total_clients
