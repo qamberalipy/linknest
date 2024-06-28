@@ -9,10 +9,15 @@ import sqlalchemy.ext.declarative as _declarative
 class User(_database.Base):
     __tablename__ = "staff"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    name=_sql.Column(_sql.String)
     username = _sql.Column(_sql.String)
     password = _sql.Column(_sql.String)
     email = _sql.Column(_sql.String, unique=True, index=True)
-    date_created = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
+    gender= _sql.Column(_sql.String)
+    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_by = _sql.Column(_sql.Integer)
+    updated_by = _sql.Column(_sql.Integer)
     org_id = _sql.Column(_sql.Integer, index=True)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     

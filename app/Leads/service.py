@@ -1,5 +1,7 @@
 from datetime import date
+from typing import Optional
 import jwt
+from sqlalchemy import or_
 import sqlalchemy.orm as _orm
 from sqlalchemy.sql import and_  
 import email_validator as _email_check
@@ -8,6 +10,7 @@ import fastapi.security as _security
 import app.core.db.session as _database
 import app.Leads.schema as _schemas
 import app.Leads.models as _models
+import app.user.models as _user_model
 import random
 import json
 import pika
@@ -42,5 +45,41 @@ async def create_lead(client: _schemas.LeadCreate, db: _orm.Session = _fastapi.D
 
 
 
+async def get_leads(data, db: _orm.Session):
+    
+    query = db.query(
+        _models.Leads.first_name,
+        _models.Leads.mobile,
+        _models.Leads.status,
+        _user_model.Source.source,
+        _user_model.User.username,
+        _models.Leads.lead_since
+        
+    ).join(
+        _user_model.Source,
+        _models.Leads.source_id == _user_model.Source.id
+    ).outerjoin (
+     _user_model.User,
+     _models.Leads.staff_id ==_user_model.User.id).filter(_models.Leads.org_id == data.org_id).all()
+    
+    print(query)
+    
+    optional_filters = []
+
+    if data.owner:
+        optional_filters.append(_user_model.User.username.ilike(f"%{data.owner}%"))
+    if data.status:
+        optional_filters.append(_models.Leads.status.ilike(f"%{data.status}%"))
+    if data.mobile:
+        optional_filters.append(_models.Leads.mobile.ilike(f"%{data.mobile}%"))
+    if data.source:
+        optional_filters.append(_user_model.Source.source.ilike(f"%{data.source}%"))
+    
+    if optional_filters:
+        query = query.filter(or_(*optional_filters)).all()
+    
+    leads = query
+
+    return leads
 
 
