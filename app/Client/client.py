@@ -26,45 +26,52 @@ def get_db():
     finally:
         db.close()
         
-    
-@router.post("/register/client", response_model=_schemas.ClientRead,tags=["Client Router"])
+@router.post("/register/client", response_model=_schemas.ClientRead, tags=["Client Router"])
 async def register_client(client: _schemas.ClientCreate, db: _orm.Session = Depends(get_db)):    
-    
     try:
         db_client = await _services.get_client_by_email(client.email, db)
         if db_client:
             raise HTTPException(status_code=400, detail="Email already registered")
 
         client_data = client.dict()
-        organization_id = client_data.get('org_id')
-        status=client_data.get('status')
-        coach_id=client_data.get('coach_id')
-        membership_id=client_data.get('membership_id')
-        client_data.pop('org_id')
-        client_data.pop('status')
-        client_data.pop('coach_id')
-        client_data.pop('membership_id')
+        organization_id = client_data.pop('org_id')
+        status = client_data.pop('status')
+        coach_id = client_data.pop('coach_id', None)
+        membership_id = client_data.pop('membership_id')
 
         new_client = await _services.create_client(_schemas.RegisterClient(**client_data), db)
-
-        await _services.create_client_organization(_schemas.CreateClientOrganization(client_id=new_client.id,org_id=organization_id,client_status=status), db)
-        await _services.create_client_membership(_schemas.CreateClientMembership(client_id=new_client.id,membership_plan_id=membership_id), db)
-        await _services.create_client_coach(_schemas.CreateClientCoach(client_id=new_client.id,coach_id=coach_id), db)
         
+        await _services.create_client_organization(
+            _schemas.CreateClientOrganization(client_id=new_client.id, org_id=organization_id, client_status=status), db
+        )
+
+        await _services.create_client_membership(
+            _schemas.CreateClientMembership(client_id=new_client.id, membership_plan_id=membership_id), db
+        )
+
+        if coach_id is not None:
+            await _services.create_client_coach(
+                _schemas.CreateClientCoach(client_id=new_client.id, coach_id=coach_id), db
+            )
+
         return new_client
 
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        logger.error(f"IntegrityError: {e}")
         raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
-
-    except DataError:
+        
+    except DataError as e:
         db.rollback()
+        logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-
+        logger.error(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+    
+    
 @router.post("/login/client", response_model=_schemas.ClientLoginResponse,  tags=["Client Router"])
 async def login_client(email_address: str, wallet_address: str, db: _orm.Session = Depends(get_db)):
     try:
