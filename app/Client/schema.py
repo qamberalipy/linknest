@@ -10,7 +10,6 @@ class ClientBase(pydantic.BaseModel):
     last_name: str
     gender: str
     dob: datetime.date
-    dob: datetime.date
     email: str
     phone: Optional[str] = None
     mobile_number: Optional[str] = None
@@ -25,13 +24,12 @@ class ClientBase(pydantic.BaseModel):
     address_1: Optional[str] = None
     address_2: Optional[str] = None
     client_since: Optional[datetime.date] = None
-    client_since: Optional[datetime.date] = None
     created_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
 
 class ClientCreate(ClientBase):
     org_id: int
-    coach_id: int
+    coach_id: Optional[int] = None
     membership_id: int
     status: str  # Corrected type annotation
     send_invitation: bool
