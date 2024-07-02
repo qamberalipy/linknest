@@ -7,7 +7,7 @@ class LeadBase(pydantic.BaseModel):
     first_name: str
     last_name:str
     staff_id:Optional[int]=None
-    mobile:str
+    mobile:Optional[str]=None
     status:str
     source_id:Optional[int]=None
     lead_since:date
@@ -15,7 +15,7 @@ class LeadBase(pydantic.BaseModel):
    
 class LeadCreate(LeadBase):
     phone:Optional[str]=None
-    email:str
+    email:Optional[str]=None
     notes:Optional[str]=None
     created_by:Optional[int]=None
     updated_by:Optional[int]=None  
