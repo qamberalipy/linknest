@@ -29,9 +29,19 @@ def get_db():
         db.close()
         
     
-@router.post("/register", response_model=_schemas.LeadCreate)
-async def register_lead(lead_data: _schemas.LeadCreate, db: _orm.Session = Depends(get_db)):   
+
+@router.post("/register")
+async def register_lead(lead_data: _schemas.LeadCreate, db: _orm.Session = Depends(get_db)):
     try:
+        # Check if the email already exists
+        existing_lead = await _services.get_lead_by_email(lead_data.email, db)
+        if existing_lead:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This email address is already registered. Please use a different email address or log in if you already have an account."
+            )
+
+        # Create new lead if email does not exist
         new_lead = await _services.create_lead(_schemas.LeadCreate(**lead_data.model_dump()), db)
         return new_lead
 
@@ -39,9 +49,7 @@ async def register_lead(lead_data: _schemas.LeadCreate, db: _orm.Session = Depen
         db.rollback()
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    
 
 @router.get("/getleads", response_model=List[_schemas.ResponseLeadRead])
 async def get_leads(org_id:int,request:Request,db: _orm.Session = Depends(get_db)):
@@ -69,4 +77,13 @@ async def update_status(data: _schemas.UpdateStatus, db: _orm.Session = Depends(
     db_lead = await _services.update_status(data,db)    
     return db_lead
 
+@router.put('/update', response_model=_schemas.LeadUpdate)
+async def update_data(lead_id:int,data: _schemas.LeadUpdate, db: _orm.Session = Depends(get_db)):
+    db_lead = await _services.update_data(lead_id,data,db)    
+    return db_lead
 
+@router.get("/getleadsById")
+async def register_lead(lead_id:int,db: _orm.Session = Depends(get_db)):
+    
+    existing_lead = await _services.get_lead_by_id(lead_id, db)
+    return existing_lead
