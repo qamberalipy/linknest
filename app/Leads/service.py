@@ -1,4 +1,5 @@
 from datetime import date
+import datetime
 from typing import Optional
 
 import jwt
@@ -25,6 +26,9 @@ from . import models, schema
 # oauth2schema = _security.OAuth2PasswordBearer("/token")
 
 
+
+
+
 def create_database():
     # Create database tables
     return _database.Base.metadata.create_all(bind=_database.engine)
@@ -37,8 +41,15 @@ def get_db():
     finally:
         db.close()
 
-async def create_lead(client: _schemas.LeadCreate, db: _orm.Session = _fastapi.Depends(get_db)):
-    db_lead = _models.Leads(**client.model_dump())
+async def get_lead_by_id(id: int, db: _orm.Session = _fastapi.Depends(get_db)):
+    return db.query(_models.Leads).filter(_models.Leads.id == id).first()
+
+async def get_lead_by_email(email_address: str, db: _orm.Session = _fastapi.Depends(get_db)):
+    return db.query(_models.Leads).filter(_models.Leads.email == email_address).first()
+
+async def create_lead(lead: _schemas.LeadCreate, db: _orm.Session = _fastapi.Depends(get_db)):
+    
+    db_lead = _models.Leads(**lead.model_dump())
     db.add(db_lead)
     db.commit()
     db.refresh(db_lead)
@@ -66,6 +77,19 @@ async def update_status(data:_schemas.UpdateStaff, db: _orm.Session = _fastapi.D
     db.refresh(db_lead)
     response={'lead_id':db_lead.id,'status':db_lead.status}
     return response
+
+async def update_data(lead_id:int,lead:_schemas.UpdateStaff, db: _orm.Session = _fastapi.Depends(get_db)):
+    db_lead = db.query(_models.Leads).filter(_models.Leads.id == lead_id).first()
+    if not db_lead:
+        raise _fastapi.HTTPException(status_code=404, detail="Lead not found")
+    
+    for key, value in lead.model_dump(exclude_unset=True).items():
+        setattr(db_lead, key, value)
+
+    db_lead.updated_at = datetime.datetime.now()
+    db.commit()
+    db.refresh(db_lead)
+    return db_lead
 
 
 async def get_leads(db: _orm.Session,params):
