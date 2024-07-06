@@ -74,13 +74,13 @@ def create_credit(credit: _schemas.CreditCreate, db: _orm.Session = Depends(get_
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
 @router.put("/credits", response_model=_schemas.CreditRead, tags=["Credits APIs"])
-def update_credit(credit_id: int, credit: _schemas.CreditUpdate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+def update_credit(credit: _schemas.CreditUpdate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
         
-        db_credit = _services.update_credit(credit_id, credit, db)
+        db_credit = _services.update_credit(credit, db)
         if db_credit is None:
             raise HTTPException(status_code=404, detail="Credit not found")
         return db_credit
@@ -90,13 +90,13 @@ def update_credit(credit_id: int, credit: _schemas.CreditUpdate, db: _orm.Sessio
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
 @router.delete("/credits", response_model=_schemas.CreditRead, tags=["Credits APIs"])
-def delete_credit(credit_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+def delete_credit(credit: _schemas.CreditDelete, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
         
-        db_credit = _services.delete_credit(credit_id, db)
+        db_credit = _services.delete_credit(credit.id, db)
         if db_credit is None:
             raise HTTPException(status_code=404, detail="Credit not found")
         return db_credit
@@ -105,7 +105,8 @@ def delete_credit(credit_id: int, db: _orm.Session = Depends(get_db), authorizat
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
-@router.get("/credits", response_model=List[_schemas.CreditRead], tags=["Credits APIs"])
+
+@router.get("/credits/getAll", response_model=List[_schemas.CreditRead], tags=["Credits APIs"])
 def get_credits_by_org_id(org_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
@@ -118,7 +119,7 @@ def get_credits_by_org_id(org_id: int, db: _orm.Session = Depends(get_db), autho
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
     
-@router.get("/credits/id", response_model=_schemas.CreditRead, tags=["Credits APIs"])
+@router.get("/credits", response_model=_schemas.CreditRead, tags=["Credits APIs"])
 def get_credit_by_id(credit_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
