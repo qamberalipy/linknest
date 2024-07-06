@@ -1,6 +1,5 @@
 import pydantic
 import datetime
-from datetime import date
 from typing import Optional
 
 class MembershipPlanBase(pydantic.BaseModel):
@@ -19,14 +18,22 @@ class MembershipPlanRead(MembershipPlanBase):
         from_attributes = True
         
 class CreditBase(pydantic.BaseModel):
-    name: str
-    org_id: int
-    min_limit: int
+    name: Optional[str] = None
+    org_id: Optional[int] = None
+    min_limit: Optional[int] = None
+    status: Optional[bool] = True
 
+class CreditDelete(pydantic.BaseModel):
+    id: int  # Correctly annotated with the type int
+
+    class Config:
+        from_attributes = True
+    
 class CreditCreate(CreditBase):
     created_by: Optional[int] = None
 
 class CreditUpdate(CreditBase):
+    id:int
     updated_by: Optional[int] = None
 
 class CreditRead(CreditBase):

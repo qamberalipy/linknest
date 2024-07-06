@@ -60,18 +60,26 @@ def create_credit(credit: _schemas.CreditCreate,db: _orm.Session):
     db.refresh(db_credit)
     return db_credit
 
-def update_credit(credit_id: int, credit: _schemas.CreditUpdate,db: _orm.Session):
+def update_credit(credit_id: int, credit_update: _schemas.CreditUpdate, db: _orm.Session):
     db_credit = db.query(_models.Credits).filter(_models.Credits.id == credit_id).first()
     if not db_credit:
         return None
-    
-    db_credit.name = credit.name
-    db_credit.org_id = credit.org_id
-    db_credit.min_limit = credit.min_limit
-    db_credit.updated_by = credit.updated_by
+
+    if credit_update.name is not None:
+        db_credit.name = credit_update.name
+    if credit_update.org_id is not None:
+        db_credit.org_id = credit_update.org_id
+    if credit_update.min_limit is not None:
+        db_credit.min_limit = credit_update.min_limit
+    if credit_update.status is not None:
+        db_credit.status = credit_update.status
+    if credit_update.updated_by is not None:
+        db_credit.updated_by = credit_update.updated_by
+
     db.commit()
     db.refresh(db_credit)
     return db_credit
+
 
 def delete_credit( credit_id: int,db: _orm.Session):
     db_credit = db.query(_models.Credits).filter(_models.Credits.id == credit_id).first()
