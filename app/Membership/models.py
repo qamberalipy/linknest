@@ -47,6 +47,7 @@ class Credits(_database.Base):
     name = _sql.Column(_sql.String)
     min_limit=_sql.Column(_sql.Integer)
     org_id = _sql.Column(_sql.Integer)
+    status=_sql.Column(_sql.Boolean,default=True)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     created_at=_sql.Column(_sql.DateTime,default=_dt.datetime.now)
     updated_at=_sql.Column(_sql.DateTime,default=_dt.datetime.now)
