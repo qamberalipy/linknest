@@ -44,3 +44,33 @@ class CreditRead(CreditBase):
 
     class Config:
         from_attributes = True
+
+class SaleTaxBase(pydantic.BaseModel):
+    name: Optional[str] = None
+    percentage: Optional[float] = None
+    org_id: Optional[int] = None
+
+class SaleTaxCreate(SaleTaxBase):
+    created_by: Optional[int] = None
+
+class SaleTaxUpdate(SaleTaxBase):
+    id: Optional[int] = None
+    updated_by: Optional[int] = None
+
+class SaleTaxRead(SaleTaxBase):
+    id: Optional[int] = None
+    is_deleted: bool
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    created_by: Optional[int] = None
+    updated_by: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class SaleTaxDelete(pydantic.BaseModel):
+    id: int 
+
+    class Config:
+        from_attributes = True
+    

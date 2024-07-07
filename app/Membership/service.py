@@ -1,5 +1,5 @@
 
-from datetime import date
+import datetime 
 import jwt
 import sqlalchemy.orm as _orm
 from sqlalchemy.sql import and_  
@@ -60,8 +60,8 @@ def create_credit(credit: _schemas.CreditCreate,db: _orm.Session):
     db.refresh(db_credit)
     return db_credit
 
-def update_credit(credit_id: int, credit_update: _schemas.CreditUpdate, db: _orm.Session):
-    db_credit = db.query(_models.Credits).filter(_models.Credits.id == credit_id).first()
+def update_credit(credit_update: _schemas.CreditUpdate, db: _orm.Session):
+    db_credit = db.query(_models.Credits).filter(_models.Credits.id == credit_update.id).first()
     if not db_credit:
         return None
 
@@ -95,3 +95,49 @@ def get_credits_by_org_id( org_id: int,db: _orm.Session):
 
 def get_credit_by_id(credit_id: int,db: _orm.Session):
     return db.query(_models.Credits).filter(_models.Credits.id == credit_id, _models.Credits.is_deleted == False).first()
+
+
+def create_sale_tax(sale_tax: _schemas.SaleTaxCreate,db: _orm.Session):
+    db_sale_tax = _models.Sale_tax(**sale_tax.dict())
+    db.add(db_sale_tax)
+    db.commit()
+    db.refresh(db_sale_tax)
+    return db_sale_tax
+
+def get_all_sale_taxes_by_org_id(org_id: int,db: _orm.Session):
+    return db.query(_models.Sale_tax).filter(_models.Sale_tax.org_id == org_id, _models.Sale_tax.is_deleted == False).all()
+
+def get_sale_tax_by_id(sale_tax_id: int,db: _orm.Session):
+    return db.query(_models.Sale_tax).filter(_models.Sale_tax.id == sale_tax_id, _models.Sale_tax.is_deleted == False).first()
+
+
+def update_sale_tax(sale_tax: _schemas.SaleTaxUpdate, db: _orm.Session):
+    db_sale_tax = db.query(_models.Sale_tax).filter(_models.Sale_tax.id == sale_tax.id).first()
+    if not db_sale_tax:
+        return None
+
+    if sale_tax.name is not None:
+        db_sale_tax.name = sale_tax.name
+    if sale_tax.percentage is not None:
+        db_sale_tax.percentage = sale_tax.percentage
+    if sale_tax.org_id is not None:
+        db_sale_tax.org_id = sale_tax.org_id
+    if sale_tax.updated_by is not None:
+        db_sale_tax.updated_by = sale_tax.updated_by
+
+    db_sale_tax.updated_at = datetime.datetime.now()
+
+    db.commit()
+    db.refresh(db_sale_tax)
+    return db_sale_tax
+
+
+def delete_sale_tax(sale_tax_id: int,db: _orm.Session):
+    db_sale_tax = db.query(_models.Sale_tax).filter(_models.Sale_tax.id == sale_tax_id).first()
+    if db_sale_tax is None:
+        return None
+    db_sale_tax.is_deleted = True
+    db_sale_tax.updated_at = datetime.datetime.now()
+    db.commit()
+    db.refresh(db_sale_tax)
+    return db_sale_tax
