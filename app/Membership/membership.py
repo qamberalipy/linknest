@@ -134,3 +134,81 @@ def get_credit_by_id(credit_id: int, db: _orm.Session = Depends(get_db), authori
         raise HTTPException(status_code=400, detail="Integrity error occurred")
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+    
+    
+@router.post("/sale_taxes", response_model=_schemas.SaleTaxRead, tags=["Sale_tax APIs"])
+def create_sale_tax(sale_tax: _schemas.SaleTaxCreate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+    try:    
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid or missing access token")
+        _helpers.verify_jwt(authorization, "User")
+        return _services.create_sale_tax(sale_tax=sale_tax,db=db)
+    
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Integrity error occurred")
+    except DataError as e:
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+
+@router.get("/sale_taxes/getAll", response_model=list[_schemas.SaleTaxRead], tags=["Sale_tax APIs"])
+def get_all_sale_taxes(org_id: int , db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+    try:    
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid or missing access token")
+        _helpers.verify_jwt(authorization, "User")
+        
+        return _services.get_all_sale_taxes_by_org_id(db=db,org_id=org_id)
+    
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Integrity error occurred")
+    except DataError as e:
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+
+@router.get("/sale_taxes", response_model=_schemas.SaleTaxRead, tags=["Sale_tax APIs"])
+def get_sale_tax(sale_tax_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+    try:    
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid or missing access token")
+        _helpers.verify_jwt(authorization, "User")
+        db_sale_tax = _services.get_sale_tax_by_id(db=db, sale_tax_id=sale_tax_id)
+        if db_sale_tax is None:
+            raise HTTPException(status_code=404, detail="Sale tax not found")
+        return db_sale_tax
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Integrity error occurred")
+    except DataError as e:
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+
+@router.put("/sale_taxes", response_model=_schemas.SaleTaxRead, tags=["Sale_tax APIs"])
+def update_sale_tax(sale_tax: _schemas.SaleTaxUpdate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+    
+    try:    
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid or missing access token")
+        _helpers.verify_jwt(authorization, "User")
+        
+        db_sale_tax = _services.update_sale_tax(sale_tax=sale_tax,db=db)
+        if db_sale_tax is None:
+            raise HTTPException(status_code=404, detail="Sale tax not found")
+        return db_sale_tax
+    
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Integrity error occurred")
+    except DataError as e:
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+
+@router.delete("/sale_taxes", response_model=_schemas.SaleTaxRead, tags=["Sale_tax APIs"])
+def delete_sale_tax(sale_tax: _schemas.SaleTaxDelete, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+    try:    
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid or missing access token")
+        _helpers.verify_jwt(authorization, "User")
+        
+        db_sale_tax = _services.delete_sale_tax(sale_tax_id=sale_tax.id,db=db)
+        if db_sale_tax is None:
+            raise HTTPException(status_code=404, detail="Sale tax not found")
+        return db_sale_tax
+    
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="Integrity error occurred")
+    except DataError as e:
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
