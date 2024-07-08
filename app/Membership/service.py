@@ -107,6 +107,7 @@ def create_sale_tax(sale_tax: _schemas.SaleTaxCreate,db: _orm.Session):
 def get_all_sale_taxes_by_org_id(org_id: int,db: _orm.Session):
     return db.query(_models.Sale_tax).filter(_models.Sale_tax.org_id == org_id, _models.Sale_tax.is_deleted == False).order_by(desc(_models.Sale_tax.created_at)).all()
 
+
 def get_sale_tax_by_id(sale_tax_id: int,db: _orm.Session):
     return db.query(_models.Sale_tax).filter(_models.Sale_tax.id == sale_tax_id, _models.Sale_tax.is_deleted == False).first()
 
