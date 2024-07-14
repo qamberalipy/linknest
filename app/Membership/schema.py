@@ -25,7 +25,11 @@ class MembershipPlanCreate(MembershipPlanBase):
     created_by: int
 
 class MembershipPlanUpdate(MembershipPlanBase):
-    updated_by: int
+    id:int
+    updated_by: Optional[int]
+
+class MembershipPlanDelete(MembershipPlanBase):
+    id:int
 
 class MembershipPlanRead(MembershipPlanBase):
     id: int
