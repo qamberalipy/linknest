@@ -14,7 +14,7 @@ import app.Shared.helpers as _helpers
 router = APIRouter()
 
 logger = logging.getLogger("uvicorn.error")
-logger. setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 # logger.addHandler(logging.StreamHandler())
 
 
@@ -76,75 +76,75 @@ def get_membership_plans_by_org_id(org_id: int, db: _orm.Session = Depends(get_d
 
 
     
-@router.post("/facilities", response_model=_schemas.CreditRead, tags=["Credits APIs"])
-def create_credit(credit: _schemas.CreditCreate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.post("/facilities", response_model=_schemas.FacilityRead, tags=["Facility APIs"])
+def create_facility(credit: _schemas.FacilityCreate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
-        return _services.create_credit(credit, db)
+        return _services.create_facility(credit, db)
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail="Integrity error occurred")
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
-@router.put("/facilities", response_model=_schemas.CreditRead, tags=["Credits APIs"])
-def update_credit(credit: _schemas.CreditUpdate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.put("/facilities", response_model=_schemas.FacilityRead, tags=["Facility APIs"])
+def update_facility(credit: _schemas.FacilityUpdate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
         
-        db_credit = _services.update_credit(credit, db)
-        if db_credit is None:
+        db_facility = _services.update_facility(credit, db)
+        if db_facility is None:
             raise HTTPException(status_code=404, detail="Credit not found")
-        return db_credit
+        return db_facility
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail="Integrity error occurred")
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
-@router.delete("/facilities", response_model=_schemas.CreditRead, tags=["Credits APIs"])
-def delete_credit(credit: _schemas.CreditDelete, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.delete("/facilities", response_model=_schemas.FacilityRead, tags=["Facility APIs"])
+def delete_facility(credit: _schemas.FacilityDelete, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
         
-        db_credit = _services.delete_credit(credit.id, db)
-        if db_credit is None:
+        db_facility = _services.delete_facility(credit.id, db)
+        if db_facility is None:
             raise HTTPException(status_code=404, detail="Credit not found")
-        return db_credit
+        return db_facility
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail="Integrity error occurred")
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
 
-@router.get("/facilities/getAll", response_model=List[_schemas.CreditRead], tags=["Credits APIs"])
-def get_credits_by_org_id(org_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.get("/facilities/getAll", response_model=List[_schemas.FacilityRead], tags=["Facility APIs"])
+def get_facilitys_by_org_id(org_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
         
-        return _services.get_credits_by_org_id(org_id, db)
+        return _services.get_facility_by_org_id(org_id, db)
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail="Integrity error occurred")
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
     
-@router.get("/facilities", response_model=_schemas.CreditRead, tags=["Credits APIs"])
-def get_credit_by_id(credit_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.get("/facilities", response_model=_schemas.FacilityRead, tags=["Facility APIs"])
+def get_facility_by_id(credit_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:    
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
         _helpers.verify_jwt(authorization, "User")
         
-        db_credit = _services.get_credit_by_id(credit_id, db)
-        if db_credit is None:
+        db_facility = _services.get_facility_by_id(credit_id, db)
+        if db_facility is None:
             raise HTTPException(status_code=404, detail="Credit not found")
-        return db_credit
+        return db_facility
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail="Integrity error occurred")
     except DataError as e:
