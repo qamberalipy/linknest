@@ -175,6 +175,7 @@ class StaffFilterRead(pydantic.BaseModel):
 class RoleBase(pydantic.BaseModel):
     name: str
     org_id: int
+    status: str
     is_deleted: Optional[bool] = False
 
     class Config:
@@ -203,6 +204,7 @@ class RoleUpdate(pydantic.BaseModel):
     id: int
     name: str
     org_id: int
+    status: str
     resource_id: List[int]
     access_type: List[str]
     created_at: Optional[datetime.datetime] = None
@@ -210,6 +212,18 @@ class RoleUpdate(pydantic.BaseModel):
     updated_by: Optional[int] = None
     updated_at: Optional[datetime.datetime] = None
     is_deleted: Optional[bool] = False
+
+    class Config:
+        from_attributes = True
+
+class ResourceRead(pydantic.BaseModel):
+    id: int
+    name: str
+    code: Optional[str] = None
+    parent: Optional[str] = None
+    is_parent: Optional[bool] = None
+    link: Optional[str] = None
+    icon: Optional[str] = None
 
     class Config:
         from_attributes = True

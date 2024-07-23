@@ -76,8 +76,9 @@ class UserRole(_database.Base):
 class Role(_database.Base):
     __tablename__ = "role"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    name=_sql.Column(_sql.String(50))
-    org_id=_sql.Column(_sql.Integer)
+    name = _sql.Column(_sql.String(50))
+    org_id = _sql.Column(_sql.Integer)
+    status = _sql.Column(_sql.String(50))
     is_deleted=_sql.Column(_sql.Boolean)
 
 class Resource(_database.Base):
@@ -86,6 +87,9 @@ class Resource(_database.Base):
     name=_sql.Column(_sql.String(50))
     code=_sql.Column(_sql.String(50))
     parent = _sql.Column(_sql.String(50))
+    is_parent = _sql.Column(_sql.Boolean)
+    link = _sql.Column(_sql.String(50))
+    icon = _sql.Column(_sql.String(50))
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     created_by = _sql.Column(_sql.Integer)

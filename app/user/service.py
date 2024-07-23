@@ -358,3 +358,6 @@ async def delete_role(role_id: int, db: _orm.Session):
         permission.is_deleted = 1
     db.commit()
     return {"detail": "Role deleted successfully"}
+
+async def get_all_resources(db: _orm.Session):
+    return db.query(_models.Resource).filter(_models.Resource.is_deleted == False).all()
