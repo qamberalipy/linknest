@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import Header,FastAPI, APIRouter, Depends, HTTPException, status
-from sqlalchemy import Tuple
+# from sqlalchemy import Tuple
 from sqlalchemy.exc import IntegrityError, DataError
 import app.Coach.schema as _schemas
 import sqlalchemy.orm as _orm

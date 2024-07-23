@@ -78,7 +78,7 @@ class Role(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     name = _sql.Column(_sql.String(50))
     org_id = _sql.Column(_sql.Integer)
-    status = _sql.Column(_sql.String(50))
+    status = _sql.Column(_sql.Boolean)
     is_deleted=_sql.Column(_sql.Boolean)
 
 class Resource(_database.Base):
