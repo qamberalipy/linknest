@@ -33,7 +33,7 @@ class MembershipPlanUpdate(MembershipPlanBase):
     id:int
     updated_by: Optional[int]
 
-class MembershipPlanDelete(MembershipPlanBase):
+class MembershipPlanDelete(pydantic.BaseModel):
     id:int
 
 class MembershipPlanRead(MembershipPlanBase):
