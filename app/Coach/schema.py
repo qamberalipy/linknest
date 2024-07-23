@@ -4,8 +4,8 @@ from typing import Optional
 
 class CoachBase(pydantic.BaseModel):
     wallet_address: Optional[str]
-    org_id=Optional[str]
-    own_coach_id: str
+    org_id : Optional[str]
+    own_coach_id: Optional[str]
     profile_img: Optional[str]
     first_name: str
     last_name: Optional[str]
