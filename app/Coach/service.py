@@ -256,55 +256,34 @@ def delete_coach(coach_id: int,db: _orm.Session):
 
     return db_coach
 
-def get_coach_by_id(coach_id: int,db: _orm.Session):
-    db_coach = db.query(models.Coach,_models.CoachOrganization.org_id,
-        _models.CoachOrganization.coach_status,
-        _usermodels.Bank_detail.bank_name,
-        _usermodels.Bank_detail.iban_no,
-        _usermodels.Bank_detail.acc_holder_name,
-        _usermodels.Bank_detail.swift_code).join(_models.CoachOrganization.coach_id==_models.Coach.id).join(_usermodels.Bank_detail.id==_models.Coach.bank_detail_id).filter(_models.Coach.id == coach_id,
-        models.Coach.is_deleted == False).first()
+# def get_coach_by_id(coach_id: int,db: _orm.Session):
+#     db_coach = db.query(models.Coach,_models.CoachOrganization.org_id,
+#         _models.CoachOrganization.coach_status,
+#         _usermodels.Bank_detail.bank_name,
+#         _usermodels.Bank_detail.iban_no,
+#         _usermodels.Bank_detail.acc_holder_name,
+#         _usermodels.Bank_detail.swift_code).join(_models.CoachOrganization.coach_id==_models.Coach.id).join(_usermodels.Bank_detail.id==_models.Coach.bank_detail_id).filter(_models.Coach.id == coach_id,
+#         models.Coach.is_deleted == False).first()
  
+#     return db_coach
+
+def get_coach_by_id(coach_id: int, db: _orm.Session):
+    db_coach = db.query(
+        *_models.Coach.__table__.columns,
+        *_models.CoachOrganization.__table__.columns,
+        *_usermodels.Bank_detail.__table__.columns,
+    ).join(
+        _models.CoachOrganization, _models.Coach.id == _models.CoachOrganization.coach_id
+    ).join(
+        _usermodels.Bank_detail, _models.Coach.bank_detail_id == _usermodels.Bank_detail.id
+    ).filter(
+        _models.Coach.id == coach_id,
+        _models.Coach.is_deleted == False
+    ).first()
+
     return db_coach
 
 def get_all_coaches_by_org_id(org_id: int, db: _orm.Session):
-    # Perform the join operations correctly and filter by org_id and is_deleted status
-
-    # db_coaches = db.query(
-    #     _models.Coach.id,
-    #     _models.Coach.wallet_address,
-    #     _models.Coach.own_coach_id,
-    #     _models.Coach.profile_img,
-    #     _models.Coach.first_name,
-    #     _models.Coach.last_name,
-    #     _models.Coach.dob,
-    #     _models.Coach.gender,
-    #     _models.Coach.email,
-    #     _models.Coach.password,
-    #     _models.Coach.phone,
-    #     _models.Coach.mobile_number,
-    #     _models.Coach.notes,
-    #     _models.Coach.source_id,
-    #     _models.Coach.country_id,
-    #     _models.Coach.city,
-    #     _models.Coach.zipcode,
-    #     _models.Coach.address_1,
-    #     _models.Coach.address_2,
-    #     _models.Coach.coach_since,
-    #     _usermodels.Bank_detail.bank_name,
-    #     _usermodels.Bank_detail.iban_no,
-    #     _usermodels.Bank_detail.acc_holder_name,
-    #     _usermodels.Bank_detail.swift_code,
-    #     _models.Coach.created_at,
-    #     _models.Coach.updated_at
-    # ).join(
-    #     _models.CoachOrganization, _models.Coach.id == _models.CoachOrganization.coach_id
-    # ).join(
-    #     _usermodels.Bank_detail, _models.Coach.bank_detail_id == _usermodels.Bank_detail.id
-    # ).filter(
-    #     _models.CoachOrganization.org_id == org_id,
-    #     _models.Coach.is_deleted == False
-    # ).all()
     
     db_coaches = db.query(
         *_models.Coach.__table__.columns,
@@ -315,7 +294,7 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session):
     ).join(
         _usermodels.Bank_detail, _models.Coach.bank_detail_id == _usermodels.Bank_detail.id
     ).filter(
-        _models.CoachOrganization.org_id == org_id,
+        _models.CoachOrganization.org_id == org_id, 
         _models.Coach.is_deleted == False
     ).all()
     print("ALL COACH",db_coaches)
