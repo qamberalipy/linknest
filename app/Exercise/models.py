@@ -10,13 +10,11 @@ class ExerciseType(PyEnum):
     time_based = 'Time Based'
     repetition_based = 'Repetition Based'
 
-
 class VisibleFor(PyEnum):
     only_myself = 'Only Myself'
     staff_of_my_club = 'Staff of My Club'
     members_of_my_club = 'Members of My Club'
     everyone_in_my_club = 'Everyone in My Club'
-
 
 class Exercise(_database.Base):
     __tablename__ = 'exercise'
@@ -29,17 +27,33 @@ class Exercise(_database.Base):
     sets = _sql.Column(_sql.Integer, nullable=True) 
     seconds_per_set = _sql.Column(_sql.ARRAY(_sql.Integer), nullable=True) 
     repetitions_per_set = _sql.Column(_sql.ARRAY(_sql.Integer), nullable=True) 
-    rest_after_set = _sql.Column(_sql.ARRAY(_sql.Integer), nullable=True)  
+    rest_between_set = _sql.Column(_sql.ARRAY(_sql.Integer), nullable=True)  
+    distance= _sql.Column(_sql.Float, nullable=True)
+    speed= _sql.Column(_sql.Float, nullable=True)
     met_id = _sql.Column(_sql.Integer, nullable=True)  
     gif_url = _sql.Column(_sql.String, nullable=True)
-    video_url = _sql.Column(_sql.String, nullable=True)
-    thumbnail = _sql.Column(_sql.String, nullable=True) 
+    video_url_male = _sql.Column(_sql.String, nullable=True)
+    video_url_female = _sql.Column(_sql.String, nullable=True)
+    thumbnail_male = _sql.Column(_sql.String, nullable=True)
+    thumbnail_female = _sql.Column(_sql.String, nullable=True)
+    image_url_female = _sql.Column(_sql.String, nullable=True)
+    image_url_male = _sql.Column(_sql.String, nullable=True)
     created_by=_sql.Column(_sql.Integer)
     updated_by=_sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
     updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
     
+class Equipment(_database.Base):
+    __tablename__ = 'equipments'
 
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    equipment_name = _sql.Column(_sql.String, nullable=False)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
+    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
+    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)   
+    is_deleted=_sql.Column(_sql.Integer)
 
 class ExerciseEquipment(_database.Base):
     __tablename__ = 'exercise_equipment'
@@ -47,69 +61,81 @@ class ExerciseEquipment(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     exercise_id=_sql.Column(_sql.Integer)
     equipment_id=_sql.Column(_sql.Integer)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
+    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
+    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
 
 class ExerciseCategory(_database.Base):
     __tablename__ = 'exercise_category'
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     category_name = _sql.Column(_sql.String, nullable=False)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
     updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
     
-
-class Equipment(_database.Base):
-    __tablename__ = 'equipments'
-
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    equipment_name = _sql.Column(_sql.String, nullable=False)
-    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
-    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-class PrimaryMuscle(_database.Base):
-    __tablename__ = 'primary_muscle'
+class Muscle(_database.Base):
+    __tablename__ = 'muscle'
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     muscle_name = _sql.Column(_sql.String, nullable=False)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
     updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-class SecondaryMuscle(_database.Base):
-    __tablename__ = 'secondary_muscle'
-
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    muscle_name = _sql.Column(_sql.String, nullable=False)
-    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
-    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    is_deleted=_sql.Column(_sql.Integer)
+    
 
 class PrimaryJoint(_database.Base):
     __tablename__ = 'primary_joint'
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     joint_name = _sql.Column(_sql.String, nullable=False)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
     updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
 
 class ExercisePrimaryMuscle(_database.Base):
     __tablename__ = 'exercise_primary_muscle'
-    id = _sql.Column(_sql.Integer)
-    exercise_id=_sql.Column(_sql.Integer)
-    primary_muscle_id=_sql.Column(_sql.Integer)
 
-class ExreciseSecondaryMuscle(_database.Base):
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    exercise_id=_sql.Column(_sql.Integer)
+    muscle_id=_sql.Column(_sql.Integer)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
+    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
+    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
+
+class ExerciseSecondaryMuscle(_database.Base):
     __tablename__ = 'exercise_secondary_muscle'
-    id = _sql.Column(_sql.Integer)
-    exercise_id=_sql.Column(_sql.Integer)
-    secondary_muscle_id=_sql.Column(_sql.Integer)
 
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    exercise_id=_sql.Column(_sql.Integer)
+    muscle_id=_sql.Column(_sql.Integer)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
+    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
+    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
 
 class ExercisePrimaryJoint(_database.Base):
     __tablename__ = 'exercise_primary_joint'
-    id = _sql.Column(_sql.Integer)
+
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     exercise_id=_sql.Column(_sql.Integer)
     primary_joint_id=_sql.Column(_sql.Integer)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
+    created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
+    updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
 
 class MET(_database.Base):
     __tablename__ = 'met'
@@ -117,7 +143,11 @@ class MET(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     met_value = _sql.Column(_sql.Float, nullable=False)
     met_description = _sql.Column(_sql.String, nullable=False)
+    created_by=_sql.Column(_sql.Integer)
+    updated_by=_sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
     updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted=_sql.Column(_sql.Integer)
+
 
 
