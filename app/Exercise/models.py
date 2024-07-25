@@ -25,9 +25,12 @@ class Exercise(_database.Base):
     exercise_name = _sql.Column(_sql.String, nullable=False)
     visible_for = _sql.Column(_sql.Enum(VisibleFor), nullable=False)
     category_id = _sql.Column(_sql.Integer, nullable=False) 
+<<<<<<< HEAD
     primary_muscle_id = _sql.Column(_sql.Integer, nullable=True)  
     secondary_muscle_id = _sql.Column(_sql.Integer, nullable=True) 
     primary_joint_id = _sql.Column(_sql.Integer, nullable=True) 
+=======
+>>>>>>> 8512dc25c4e5c35a3dfeee998b3b075fe5edc902
     exercise_type = _sql.Column(_sql.String, nullable=False)  
     sets = _sql.Column(_sql.Integer, nullable=True) 
     seconds_per_set = _sql.Column(_sql.ARRAY(_sql.Integer), nullable=True) 
@@ -58,7 +61,7 @@ class ExerciseCategory(_database.Base):
     category_name = _sql.Column(_sql.String, nullable=False)
     created_at = _sql.Column(_sql.DateTime, default=datetime.utcnow)
     updated_at = _sql.Column(_sql.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    
 
 class Equipment(_database.Base):
     __tablename__ = 'equipments'
