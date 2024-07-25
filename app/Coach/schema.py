@@ -79,6 +79,9 @@ class CoachLoginResponse(pydantic.BaseModel):
     coach: Optional[CoachRead] = None
     access_token: Optional[Dict[str, str]] = None
     
+class CoachCount(pydantic.BaseModel):
+    total_coaches: int
+    
 class CoachFilterParams(pydantic.BaseModel):
     org_id: int
     search_key: Optional[str] = None

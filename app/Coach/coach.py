@@ -104,5 +104,15 @@ def get_coaches_by_org_id(org_id: int,request: Request,db: _orm.Session = Depend
 
 
 
+@router.get("/getTotalCoach", response_model=_schemas.CoachCount, tags=["Coach Router"])
+async def get_total_coaches(org_id: int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+    try:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid or missing access token")
 
-
+        _helpers.verify_jwt(authorization, "User")
+        
+        total_coaches = await _services.get_total_coaches(org_id, db)
+        return {"total_coaches": total_coaches}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
