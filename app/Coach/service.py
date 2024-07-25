@@ -340,3 +340,13 @@ def get_all_coaches_by_org_id(db: _orm.Session,params: _schemas.CoachFilterParam
     db_coaches = query.all()
     
     return db_coaches
+
+async def get_total_coaches(org_id: int, db: _orm.Session = _fastapi.Depends(get_db)) -> int:
+    total_coaches = db.query(func.count(models.Coach.id)).join(
+        models.CoachOrganization,
+        models.CoachOrganization.coach_id == models.Coach.id
+    ).filter(
+        models.CoachOrganization.org_id == org_id
+    ).scalar()
+    
+    return total_coaches
