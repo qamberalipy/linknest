@@ -104,7 +104,7 @@ class PrimaryJoint(_database.Base):
 class ExercisePrimaryMuscle(_database.Base):
     __tablename__ = 'exercise_primary_muscle'
 
-    id = _sql.Column(_sql.Integer)
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     exercise_id=_sql.Column(_sql.Integer)
     muscle_id=_sql.Column(_sql.Integer)
     created_by=_sql.Column(_sql.Integer)
@@ -116,7 +116,7 @@ class ExercisePrimaryMuscle(_database.Base):
 class ExerciseSecondaryMuscle(_database.Base):
     __tablename__ = 'exercise_secondary_muscle'
 
-    id = _sql.Column(_sql.Integer)
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     exercise_id=_sql.Column(_sql.Integer)
     muscle_id=_sql.Column(_sql.Integer)
     created_by=_sql.Column(_sql.Integer)
@@ -128,7 +128,7 @@ class ExerciseSecondaryMuscle(_database.Base):
 class ExercisePrimaryJoint(_database.Base):
     __tablename__ = 'exercise_primary_joint'
 
-    id = _sql.Column(_sql.Integer)
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     exercise_id=_sql.Column(_sql.Integer)
     primary_joint_id=_sql.Column(_sql.Integer)
     created_by=_sql.Column(_sql.Integer)
