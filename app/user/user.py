@@ -116,7 +116,7 @@ async def get_staff(org_id:int, db: _orm.Session= Depends(get_db), authorization
         raise HTTPException(status_code=401, detail="Invalid or missing access token")
 
     _helpers.verify_jwt(authorization, "User")
-    filtered_users=  db.query(_models.User.org_id,_models.User.id,_models.User.first_name).filter(_models.User.org_id == org_id).all()
+    filtered_users =  db.query(_models.User.org_id,_models.User.id,_models.User.first_name).filter(_models.User.org_id == org_id, _models.User.is_deleted == False).all()
     return filtered_users
 
 
@@ -170,6 +170,8 @@ async def get_all_staff(staff_id: int, db: _orm.Session = Depends(get_db), autho
         print("Fetching staff with ID:", staff_id)
         staff_list = await _services.get_one_staff(staff_id, db)
         print("Staff list:", staff_list)
+        if staff_list is None:
+            raise HTTPException(status_code=404, detail="Staff not found")
         return staff_list
 
     except IntegrityError as e:
