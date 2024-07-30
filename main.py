@@ -10,12 +10,14 @@ from dotenv import load_dotenv
 from app.core.main_router import router as main_router
 from app.user import user_router
 from app.Client import client_router
+from app.MealPlan import mealplan_router
 from app.Membership import membership_router
 from app.Coach import coach_router
 from app.Event import event_router
 from app.Exercise import exercise_router
 from app.Leads import leads_router
 from app.Food import food_router
+from app.Workout import workout_router
 from app.Shared.helpers import verify_jwt
 
 load_dotenv(".env")
@@ -38,7 +40,7 @@ app.add_middleware(CORSMiddleware,
 
 @app.middleware("http")
 async def jwt_niddleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
-    myroutes = ("/workout")
+    myroutes = ("/fastapi/workout")
     if not request.url.path.startswith(myroutes):
         response = await call_next(request)
         return response
@@ -59,7 +61,6 @@ async def jwt_niddleware(request: Request, call_next: RequestResponseEndpoint) -
     except:
         return token_expection
     
-    print("Token time: ", (time.time() - payload["token_time"]) > int(JWT_EXPIRY), time.time() - payload["token_time"], int(JWT_EXPIRY))
     if (time.time() - payload["token_time"]) > int(JWT_EXPIRY):
         return token_expection
     if payload['user_type'] != "user":
@@ -76,9 +77,11 @@ app.include_router(coach_router)
 app.include_router(membership_router)
 app.include_router(event_router)
 app.include_router(leads_router)
+app.include_router(mealplan_router)
 app.include_router(food_router)
 app.include_router(root_router)
 app.include_router(exercise_router)
+app.include_router(workout_router)
 
 AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL")
 # logging.basicConfig(level=logging.INFO)
@@ -87,4 +90,4 @@ if __name__ == "__main__":
 
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", port=8000, reload=True)
