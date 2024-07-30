@@ -8,11 +8,11 @@ from enum import Enum as PyEnum
 
 class MealTimeEnum(PyEnum):
     breakfast = "breakfast"
-    breakfast_snack = "breakfast_Snack"
+    breakfast_snack = "breakfast_snack"
     lunch = "lunch"
-    lunch_snack = "lunch_Snack"
+    lunch_snack = "lunch_snack"
     dinner = "dinner"
-    dinner_snack = "dinner_Snack"
+    dinner_snack = "dinner_snack"
     
 class VisibleForEnum(PyEnum):
     only_myself = "Only myself"

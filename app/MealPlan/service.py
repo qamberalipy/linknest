@@ -28,6 +28,7 @@ def get_meal_plan_by_id(id: int, db: _orm.Session):
         _models.MealPlan.profile_img,
         _models.MealPlan.visible_for,
         _models.MealPlan.description,
+        _models.MealPlan.org_id,
         func.array_agg(
             func.json_build_object(
                 'id', _models.Meal.id,
@@ -44,24 +45,27 @@ def get_meal_plan_by_id(id: int, db: _orm.Session):
     ).group_by(
         _models.MealPlan.id,
         _models.MealPlan.name,
+        _models.MealPlan.org_id,
         _models.MealPlan.profile_img,
         _models.MealPlan.visible_for,
         _models.MealPlan.description,
     )
 
     db_meal_plan = query.first()
-    if db_meal_plan:
-        return db_meal_plan
-    else:
-        raise HTTPException(status_code=404, detail="Meal plan not found")
     
-def get_meal_plans_by_org_id(org_id: int, db: _orm.Session):
+    if db_meal_plan is None:
+        raise HTTPException(status_code=404, detail="Meal plan not found")    
+    else:
+        return db_meal_plan
+    
+def get_meal_plans_by_org_id(org_id: int, db: _orm.Session,params: _schemas.MealPlanFilterParams):
     query = db.query(
         _models.MealPlan.id,
         _models.MealPlan.name,
         _models.MealPlan.profile_img,
         _models.MealPlan.visible_for,
         _models.MealPlan.description,
+        params.org_id,
         func.array_agg(
             func.json_build_object(
                 'id', _models.Meal.id,
@@ -73,16 +77,18 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session):
     ).outerjoin(
         _models.Meal, _models.MealPlan.id == _models.Meal.meal_plan_id
     ).filter(
-        _models.MealPlan.org_id == org_id,
+        _models.MealPlan.org_id == params.org_id,
         _models.MealPlan.is_deleted == False
     ).group_by(
         _models.MealPlan.id,
         _models.MealPlan.name,
+        params.org_id,
         _models.MealPlan.profile_img,
         _models.MealPlan.visible_for,
         _models.MealPlan.description,
     )
 
+    print("query",query)
     return query.all()
    
 def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session):

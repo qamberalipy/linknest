@@ -5,9 +5,9 @@ from app.MealPlan.models import VisibleForEnum, MealTimeEnum
 
 
 class MealBase(BaseModel):
-    meal_time: MealTimeEnum
-    food_id: int
-    quantity: float
+    meal_time: Optional[MealTimeEnum] = None
+    food_id: Optional[int] = None
+    quantity: Optional[float] = None
 
 class CreateMeal(MealBase):
     pass
@@ -25,6 +25,7 @@ class DeleteMeal(MealBase):
 
 class MealPlanBase(BaseModel):
     name: str
+    org_id : int
     profile_img: Optional[str]
     visible_for: VisibleForEnum
     description: Optional[str]
@@ -41,6 +42,7 @@ class ReadMealPlan(MealPlanBase):
 
 class UpdateMealPlan(BaseModel):
     id: int
+    org_id : Optional[int] = None
     name: Optional[str] = None
     profile_img: Optional[str] = None
     visible_for: Optional[VisibleForEnum] = None
@@ -52,8 +54,17 @@ class UpdateMealPlan(BaseModel):
 class DeleteMealPlan(BaseModel):
     id: int
 
+class MealPlanFilterParams(BaseModel):
+    org_id: int
+    search_key: Optional[str] = None
+    sort_by: Optional[str] = None
+    status: Optional[str] = None
+    limit:Optional[int] = None
+    offset:Optional[int] = None
+
 class ShowMealPlan(BaseModel):
     id: int
+    org_id : int
     name: Optional[str] = None
     profile_img: Optional[str] = None
     visible_for: Optional[VisibleForEnum] = None
