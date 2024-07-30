@@ -41,7 +41,6 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")        
     
 
-
 @router.get("/exercise/equipments", response_model=List[_schemas.Equipments])
 async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:
@@ -80,9 +79,6 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
     except DataError as e:
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data` error occurred, check your input")
-
-
-
 
 
 @router.post("/exercise",response_model=_schemas.ExerciseBase)

@@ -108,7 +108,7 @@ def create_exercise_secondary_muscle(exercise_id,secondary_muscle_ids,db: _orm.S
         db.refresh(new_exercise_secondary_muscle)
 
     
-async def get_exercise(db: _orm.Session = _fastapi.Depends(get_db)):
+async def get_exercise(org_id:int,db: _orm.Session = _fastapi.Depends(get_db)):
 
     Exercise = aliased(_models.Exercise)
     PrimaryMuscle = aliased(_models.Muscle)
@@ -116,40 +116,82 @@ async def get_exercise(db: _orm.Session = _fastapi.Depends(get_db)):
     PrimaryJoint = aliased(_models.PrimaryJoint)
     Equipment = aliased(_models.Equipment)
 
-    query = db.query(
-        Exercise.exercise_name,
-        Exercise.visible_for,
-        Exercise.category_id,
-        Exercise.exercise_type,
-        Exercise.sets,
-        Exercise.seconds_per_set,
-        Exercise.repetitions_per_set,
-        Exercise.rest_between_set,
-        Exercise.distance,
-        Exercise.speed,
-        Exercise.met_id,
-        Exercise.gif_url,
-        Exercise.video_url_male,
-        Exercise.video_url_female,
-        Exercise.thumbnail_male,
-        Exercise.thumbnail_female,
-        Exercise.image_url_female,
-        Exercise.image_url_male,
-        Exercise.id,
+
+    equipment_query = db.query(
+        _models.ExerciseEquipment.exercise_id,
         func.json_agg(
             func.json_build_object('id', func.coalesce(Equipment.id,0), 'name', func.coalesce(Equipment.equipment_name,""))
         ).label('equipments')
-    ).select_from(
-        Exercise
-    ).join(
-        _models.ExerciseEquipment, Exercise.id == _models.ExerciseEquipment.exercise_id
     ).join(
         Equipment, _models.ExerciseEquipment.equipment_id == Equipment.id
-    ).filter(
-        Exercise.is_deleted == False
-    ).group_by(Exercise.id).all()
+    ).group_by(_models.ExerciseEquipment.exercise_id).subquery()
+    
 
-    print(query)
+    primary_muscle_query = db.query(
+        _models.ExercisePrimaryMuscle.exercise_id,
+        func.json_agg(
+            func.json_build_object('id', func.coalesce(PrimaryMuscle.id,0), 'name', func.coalesce(PrimaryMuscle.muscle_name,""))
+        ).label('primary_muscles')
+    ).join(
+        PrimaryMuscle, _models.ExercisePrimaryMuscle.muscle_id == PrimaryMuscle.id
+    ).group_by(_models.ExercisePrimaryMuscle.exercise_id).subquery()
+
+
+    secondary_muscle_query = db.query(
+       _models.ExerciseSecondaryMuscle.exercise_id,
+        func.json_agg(
+            func.json_build_object('id', func.coalesce(SecondaryMuscle.id,0), 'name', func.coalesce(SecondaryMuscle.muscle_name,""))
+        ).label('secondary_muscles')
+    ).join(
+        SecondaryMuscle, _models.ExerciseSecondaryMuscle.muscle_id == SecondaryMuscle.id
+    ).group_by( _models.ExerciseSecondaryMuscle.exercise_id).subquery()
+
+
+    primary_joint_query = db.query(
+         _models.ExercisePrimaryJoint.exercise_id,
+        func.json_agg(
+            func.json_build_object('id', func.coalesce(PrimaryJoint.id,0), 'name', func.coalesce(PrimaryJoint.joint_name,""))
+        ).label('primary_joints')
+    ).join(
+        PrimaryJoint, _models.ExercisePrimaryJoint.primary_joint_id == PrimaryJoint.id
+    ).group_by(_models.ExercisePrimaryJoint.exercise_id).subquery()
+
+    query = db.query(
+    Exercise.exercise_name,
+    Exercise.visible_for,
+    Exercise.org_id,
+    Exercise.category_id,
+    Exercise.exercise_type,
+    Exercise.difficulty,
+    Exercise.sets,
+    Exercise.seconds_per_set,
+    Exercise.repetitions_per_set,
+    Exercise.rest_between_set,
+    Exercise.distance,
+    Exercise.speed,
+    Exercise.met_id,
+    Exercise.gif_url,
+    Exercise.video_url_male,
+    Exercise.video_url_female,
+    Exercise.thumbnail_male,
+    Exercise.thumbnail_female,
+    Exercise.image_url_female,
+    Exercise.image_url_male,
+    Exercise.id,
+    equipment_query.c.equipments,
+    primary_muscle_query.c.primary_muscles,
+    secondary_muscle_query.c.secondary_muscles,
+    primary_joint_query.c.primary_joints
+    ).select_from(Exercise).join(
+    equipment_query, Exercise.id == equipment_query.c.exercise_id
+    ).join(
+    primary_muscle_query, Exercise.id == primary_muscle_query.c.exercise_id
+    ).join(
+    secondary_muscle_query, Exercise.id == secondary_muscle_query.c.exercise_id
+    ).join(
+    primary_joint_query, Exercise.id == primary_joint_query.c.exercise_id).filter(
+    Exercise.is_deleted == False and Exercise.org_id==org_id
+    ).all()
 
     return query
 
