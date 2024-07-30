@@ -8,6 +8,7 @@ import app.Shared.helpers as _helpers
 from typing import List
 from sqlalchemy import func, or_
 from sqlalchemy.sql import and_  
+from sqlalchemy.orm import aliased
 from fastapi import FastAPI, Header,APIRouter, Depends, HTTPException, Request, status
 
 def create_database():
@@ -20,10 +21,39 @@ def get_db():
     finally:
         db.close()
         
+def get_meal_plan_by_id(id: int, db: _orm.Session):
+    query = db.query(
+        _models.MealPlan.id,
+        _models.MealPlan.name,
+        _models.MealPlan.profile_img,
+        _models.MealPlan.visible_for,
+        _models.MealPlan.description,
+        func.array_agg(
+            func.json_build_object(
+                'id', _models.Meal.id,
+                'meal_time', _models.Meal.meal_time,
+                'food_id', _models.Meal.food_id,
+                'quantity', _models.Meal.quantity
+            )
+        ).label('meals')
+    ).outerjoin(
+        _models.Meal, _models.MealPlan.id == _models.Meal.meal_plan_id
+    ).filter(
+        _models.MealPlan.id == id
+    ).group_by(
+        _models.MealPlan.id,
+        _models.MealPlan.name,
+        _models.MealPlan.profile_img,
+        _models.MealPlan.visible_for,
+        _models.MealPlan.description,
+    )
 
-def get_meal_plan(meal_plan_id: int, db: _orm.Session = _fastapi.Depends(get_db)):
-    return db.query(_models.MealPlan).filter(_models.MealPlan.id == meal_plan_id).first()
-
+    db_meal_plan = query.first()
+    if db_meal_plan:
+        return db_meal_plan
+    else:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+   
 def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session):
     # Remove the 'meals' field from the meal plan dictionary if it exists
     meal_plan_dict = meal_plan.dict(exclude={'meals'})
@@ -46,7 +76,7 @@ def update_meal_plan(meal_plan_id: int, meal_plan: _schemas.UpdateMealPlan, db: 
     # Remove existing meals
     db.query(_models.Meal).filter(_models.Meal.meal_plan_id == meal_plan_id).delete()
 
-    # Add updated meals
+    # Add updated meals 
     updated_meals = [
         _models.Meal(
             meal_time=meal.meal_time,

@@ -7,12 +7,12 @@ import sqlalchemy.ext.declarative as _declarative
 from enum import Enum as PyEnum
 
 class MealTimeEnum(PyEnum):
-    breakfast = "Breakfast"
-    breakfast_snack = "Breakfast_Snack"
-    lunch = "Lunch"
-    lunch_snack = "Lunch_Snack"
-    dinner = "Dinner"
-    dinner_snack = "Dinner_Snack"
+    breakfast = "breakfast"
+    breakfast_snack = "breakfast_Snack"
+    lunch = "lunch"
+    lunch_snack = "lunch_Snack"
+    dinner = "dinner"
+    dinner_snack = "dinner_Snack"
     
 class VisibleForEnum(PyEnum):
     only_myself = "Only myself"
