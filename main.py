@@ -2,6 +2,7 @@ import os
 import time
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer
 from fastapi_sqlalchemy import DBSessionMiddleware
 import jwt
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -37,6 +38,8 @@ app.add_middleware(CORSMiddleware,
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+
 
 @app.middleware("http")
 async def jwt_niddleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -85,6 +88,8 @@ app.include_router(workout_router)
 
 AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL")
 # logging.basicConfig(level=logging.INFO)
+
+
 
 if __name__ == "__main__":
 

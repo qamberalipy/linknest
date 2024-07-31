@@ -1,5 +1,6 @@
-from typing import List
+from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import IntegrityError, DataError
 import app.Exercise.schema as _schemas
 import sqlalchemy.orm as _orm
@@ -13,6 +14,8 @@ router = APIRouter(tags=["Exercise Router"])
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.DEBUG)
 
+
+
 def get_db():
     db = _database.SessionLocal()
     try:
@@ -21,7 +24,7 @@ def get_db():
         db.close()
 
 
-@router.get("/exercise/muscles", response_model=List[_schemas.Muscle])
+@router.get("/exercise/muscles", response_model=List[_schemas.Muscle],summary="Get Muscles")
 async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:
         
@@ -30,8 +33,8 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
 
         _helpers.verify_jwt(authorization, "User")
     
-        filtered_leads = await _services.get_muscle(db)
-        return filtered_leads
+        muscles = await _services.get_muscle(db)
+        return muscles
     
     except IntegrityError as e:
         logger.error(f"IntegrityError: {e}")
@@ -41,7 +44,7 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")        
     
 
-@router.get("/exercise/equipments", response_model=List[_schemas.Equipments])
+@router.get("/exercise/equipments", response_model=List[_schemas.Equipments],summary="Get Equipments")
 async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:
         
@@ -50,8 +53,8 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
 
         _helpers.verify_jwt(authorization, "User")
     
-        filtered_leads = await _services.get_equipments(db)
-        return filtered_leads
+        equipments = await _services.get_equipments(db)
+        return equipments
     
     except IntegrityError as e:
         logger.error(f"IntegrityError: {e}")
@@ -61,7 +64,7 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
     
 
-@router.get("/exercise/primary_joints", response_model=List[_schemas.PrimaryJoint])
+@router.get("/exercise/primary_joints", response_model=List[_schemas.PrimaryJoint],summary="Get Primary Joints")
 async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:
         
@@ -70,8 +73,8 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
 
         _helpers.verify_jwt(authorization, "User")
     
-        filtered_leads = await _services.get_primary_joints(db)
-        return filtered_leads
+        primary_joints = await _services.get_primary_joints(db)
+        return primary_joints
     
     except IntegrityError as e:
         logger.error(f"IntegrityError: {e}")
@@ -98,15 +101,22 @@ async def create_exercise(exercise: _schemas.ExerciseCreate, db: _orm.Session = 
         raise HTTPException(status_code=400, detail="Data error occurred, check your input") 
     
 
-@router.get("/exercise/getAll", response_model=List[_schemas.ExerciseRead])
+@router.get("/exercise", response_model=List[_schemas.ExerciseRead])
 async def get_exercise(org_id:int,db: _orm.Session = Depends(get_db)):
     
         exercises = await _services.get_exercise(org_id,db)
         return exercises   
 
 
-@router.get("/exercise", response_model=_schemas.ExerciseRead)
+@router.get("/exercise/{id}", response_model=_schemas.ExerciseRead)
 async def get_exercise(id:int,db: _orm.Session = Depends(get_db)):
     
         exercises = await _services.get_exercise_by_id(id,db)
         return exercises   
+
+@router.put("/exercise",response_model=_schemas.ExerciseUpdate)
+async def update_exercise(data:_schemas.ExerciseUpdate,db: _orm.Session = Depends(get_db)):
+    exercises = await _services.exercise_update(data,db)
+    return exercises
+
+
