@@ -192,7 +192,6 @@ async def get_all_staff(org_id: int, db: _orm.Session = Depends(get_db), authori
 
         _helpers.verify_jwt(authorization, "User")
 
-        print("Fetching staff with ID:", org_id)
         total_staffs = await _services.get_Total_count_staff(org_id, db)
         print("Staff list:", total_staffs)
         if total_staffs is None:
@@ -338,7 +337,6 @@ async def get_roles(org_id: Optional[int] = None, role_id: Optional[int] = None,
         elif role_id:
             print("In role")
             roles = await _services.get_role(role_id, db)
-
         return roles
     except IntegrityError as e:
         logger.error(f"IntegrityError: {e}")
