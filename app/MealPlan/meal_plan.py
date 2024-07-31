@@ -40,10 +40,7 @@ async def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session 
     except DataError as e:
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
+   
 
 @router.get("/meal_plans", response_model=_schemas.ShowMealPlan)
 async def get_meal_plans(id:int , db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
@@ -80,10 +77,7 @@ async def update_meal_plan(meal_plan: _schemas.UpdateMealPlan, db: _orm.Session 
     except DataError as e:
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
+   
 
 
 @router.delete("/meal_plans", response_model=_schemas.ReadMealPlan)
@@ -104,10 +98,7 @@ async def delete_meal_plan(meal_plan: _schemas.DeleteMealPlan, db: _orm.Session 
     except DataError as e:
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    
+       
     
 @router.get("/meal_plans/getAll", response_model=List[_schemas.ShowMealPlan])
 async def get_all_meal_plans(org_id: int, request:Request,db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
@@ -120,7 +111,9 @@ async def get_all_meal_plans(org_id: int, request:Request,db: _orm.Session = Dep
         params = {
             "org_id": org_id,
             "search_key": request.query_params.get("search_key"),
-            "sort_by": request.query_params.get("sort_by"),
+            "visible_for" : request.query_params.get("visible_for"),
+            "assign_to" : request.query_params.get("assign_to"),
+            "sort_order": request.query_params.get("sort_order"),
             "status": request.query_params.get("status"),
             "limit":request.query_params.get('limit') ,
             "offset":request.query_params.get('offset')
@@ -135,6 +128,4 @@ async def get_all_meal_plans(org_id: int, request:Request,db: _orm.Session = Dep
     except DataError as e:
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+   

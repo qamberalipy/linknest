@@ -6,7 +6,7 @@ import app.MealPlan.schema as _schemas
 import app.MealPlan.models as _models
 import app.Shared.helpers as _helpers
 from typing import List
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_ ,asc, desc, cast, String
 from sqlalchemy.sql import and_  
 from sqlalchemy.orm import aliased
 from fastapi import FastAPI, Header,APIRouter, Depends, HTTPException, Request, status
@@ -59,13 +59,16 @@ def get_meal_plan_by_id(id: int, db: _orm.Session):
         return db_meal_plan
     
 def get_meal_plans_by_org_id(org_id: int, db: _orm.Session,params: _schemas.MealPlanFilterParams):
+    
+    sort_order = desc(_models.MealPlan.created_at) if params.sort_order == "desc" else asc(_models.MealPlan.created_at)
+    
     query = db.query(
         _models.MealPlan.id,
         _models.MealPlan.name,
         _models.MealPlan.profile_img,
         _models.MealPlan.visible_for,
         _models.MealPlan.description,
-        params.org_id,
+        _models.MealPlan.org_id,
         func.array_agg(
             func.json_build_object(
                 'id', _models.Meal.id,
@@ -74,22 +77,36 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session,params: _schemas.Meal
                 'quantity', _models.Meal.quantity
             )
         ).label('meals')
-    ).outerjoin(
+    ).join(
         _models.Meal, _models.MealPlan.id == _models.Meal.meal_plan_id
     ).filter(
-        _models.MealPlan.org_id == params.org_id,
+        _models.MealPlan.org_id == org_id,
         _models.MealPlan.is_deleted == False
+    ).order_by(sort_order
     ).group_by(
-        _models.MealPlan.id,
-        _models.MealPlan.name,
-        params.org_id,
-        _models.MealPlan.profile_img,
-        _models.MealPlan.visible_for,
-        _models.MealPlan.description,
-    )
+        _models.MealPlan.id
+        )
+    
+    if params.search_key:
+        search_pattern = f"%{params.search_key}%"
+        query = query.filter(or_(
+            _models.MealPlan.name.ilike(search_pattern),
+            _models.MealPlan.description.ilike(search_pattern),
+            _models.Meal.meal_time.ilike(search_pattern)
+        ))
+            
+    if params.visible_for:
+        query = query.filter(cast(_models.MealPlan.visible_for, String).ilike(f"%{params.visible_for}%"))
+        print("query1", query)
+    
+    if params.assign_to:
+        query = query.filter(_models.MealPlan.assign_to.ilike(f"%{params.assign_to}%"))
+    
+    query = query.offset(params.offset).limit(params.limit)
+    db_mealplan = query.all()
 
-    print("query",query)
-    return query.all()
+    print("query",db_mealplan)
+    return db_mealplan
    
 def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session):
     # Remove the 'meals' field from the meal plan dictionary if it exists

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import datetime
 from typing import Optional, List
 from app.MealPlan.models import VisibleForEnum, MealTimeEnum
@@ -56,12 +56,27 @@ class DeleteMealPlan(BaseModel):
 
 class MealPlanFilterParams(BaseModel):
     org_id: int
+    visible_for : Optional[VisibleForEnum] = None
+    assign_to : Optional[str] = None
+    food_nutrients : Optional[str] = None
     search_key: Optional[str] = None
-    sort_by: Optional[str] = None
+    sort_order: Optional[str] = None
     status: Optional[str] = None
     limit:Optional[int] = None
     offset:Optional[int] = None
-
+    
+    @field_validator('visible_for', mode='before')
+    def map_visible_for(cls, value):
+        if value == 'only_myself':
+            return VisibleForEnum.only_myself
+        elif value == 'staff_of_my_gym':
+            return VisibleForEnum.staff
+        elif value == 'members_of_my_gym':
+            return VisibleForEnum.members
+        elif value == 'everyone_in_my_gym':
+            return VisibleForEnum.everyone
+        return value
+    
 class ShowMealPlan(BaseModel):
     id: int
     org_id : int
