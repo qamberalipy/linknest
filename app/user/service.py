@@ -389,9 +389,7 @@ async def get_all_resources(db: _orm.Session):
 
 async def get_Total_count_staff(org_id: int, db: _orm.Session = _fastapi.Depends(get_db)) -> int:
     total_staffs = db.query(func.count(models.User.id)).filter(
-        _models.User.org_id == org_id,
-        _models.User.is_deleted == False
-        
+        _models.User.org_id == org_id
     ).scalar()
     print(total_staffs)
     return total_staffs
