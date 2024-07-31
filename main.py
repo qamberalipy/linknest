@@ -41,7 +41,7 @@ async def jwt_middleware(
     authorization: Annotated[str, Header(description="JWT authorization token")],
 ):
     myroutes = ("/workout")
-    if not request.url.path.startswith(myroutes) && not request.url.path.startswith(ROOT_PATH+myroutes):
+    if not request.url.path.startswith(myroutes) and not request.url.path.startswith(ROOT_PATH+myroutes):
         return
 
     if not authorization or not authorization.startswith("Bearer"):
