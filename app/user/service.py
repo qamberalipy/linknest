@@ -324,37 +324,38 @@ async def temp_get_role(role_id: int, db: _orm.Session):
 
 from collections import defaultdict
 
-# async def test_get_role(role_id: int, db: _orm.Session):
-#     role = db.query(_models.Role).filter(_models.Role.id == role_id, _models.Role.is_deleted == False).first()
-#     if role is None:
-#         raise _fastapi.HTTPException(status_code=404, detail="Role not found")
-    
-#     permissions = db.query(
-#         _models.Resource.name.label("resource_name"),
-#         _models.Permission.access_type,
-#         _models.Role.org_id,
-#         _models.Role.status,
-#         _models.Permission.id.label("permission_id"),
-#         _models.Role.id.label("role_id"),
-#         _models.Resource.code,
-#         _models.Resource.link,
-#         _models.Resource.icon,
-#         _models.Resource.is_parent,
-#         _models.Resource.parent
-#     ).join(
-#         _models.Permission, _models.Resource.id == _models.Permission.resource_id
-#     ).join(
-#         _models.Role, _models.Permission.role_id == _models.Role.id
-#     ).filter(
-#         _models.Permission.role_id == role_id,
-#         _models.Permission.is_deleted == False
-#     ).options(
-#         joinedload(_models.Resource.resources)
-#     ).all()
-#     print(permissions)
+async def test_get_role(role_id: int, db: _orm.Session):
+    role = db.query(_models.Role).filter(_models.Role.id == role_id, _models.Role.is_deleted == False).first()
+    if role is None:
+        raise _fastapi.HTTPException(status_code=404, detail="Role not found")
+  
+    # permissions = db.query(
+    #     _models.Resource.name.label("resource_name"),
+    #     _models.Permission.access_type,
+    #     _models.Role.org_id,
+    #     _models.Role.status,
+    #     _models.Permission.id.label("permission_id"),
+    #     _models.Role.id.label("role_id"),
+    #     _models.Resource.code,
+    #     _models.Resource.link,
+    #     _models.Resource.icon,
+    #     _models.Resource.is_parent,
+    #     _models.Resource.parent
+    # ).join(
+    #     _models.Permission, _models.Resource.id == _models.Permission.resource_id
+    # ).join(
+    #     _models.Role, _models.Permission.role_id == _models.Role.id
+    # ).filter(
+    #     _models.Permission.role_id == role_id,
+    #     _models.Permission.is_deleted == False
+    # ).options(
+    #     _orm.joinedload(_models.Resource.children)
+    # )
+    permissions = db.query(_models.Resource).options(_orm.joinedload(_models.Resource.children)).all()
+    print(permissions)
 
 
-#     return permissions
+    return permissions
 
 
 async def get_role(role_id: int, db: _orm.Session):
@@ -510,9 +511,7 @@ async def get_all_resources(db: _orm.Session):
 
 async def get_Total_count_staff(org_id: int, db: _orm.Session = _fastapi.Depends(get_db)) -> int:
     total_staffs = db.query(func.count(models.User.id)).filter(
-        _models.User.org_id == org_id,
-        _models.User.is_deleted == False
-        
+        _models.User.org_id == org_id
     ).scalar()
     print(total_staffs)
     return total_staffs
