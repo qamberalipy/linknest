@@ -24,14 +24,11 @@ def get_db():
         db.close()
 
 
-@router.get("/exercise/muscles", response_model=List[_schemas.Muscle],summary="Get Muscles")
-async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.get("/exercise/muscles", response_model=List[_schemas.Muscle])
+async def get_muscle(db: _orm.Session = Depends(get_db)):
     try:
         
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing access token")
-
-        _helpers.verify_jwt(authorization, "User")
+        
     
         muscles = await _services.get_muscle(db)
         return muscles
@@ -44,14 +41,11 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")        
     
 
-@router.get("/exercise/equipments", response_model=List[_schemas.Equipments],summary="Get Equipments")
-async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.get("/exercise/equipments", response_model=List[_schemas.Equipments])
+async def get_muscle(db: _orm.Session = Depends(get_db)):
     try:
         
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing access token")
-
-        _helpers.verify_jwt(authorization, "User")
+        
     
         equipments = await _services.get_equipments(db)
         return equipments
@@ -64,14 +58,11 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
     
 
-@router.get("/exercise/primary_joints", response_model=List[_schemas.PrimaryJoint],summary="Get Primary Joints")
-async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.get("/exercise/primary_joints", response_model=List[_schemas.PrimaryJoint])
+async def get_muscle(db: _orm.Session = Depends(get_db)):
     try:
         
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing access token")
-
-        _helpers.verify_jwt(authorization, "User")
+        
     
         primary_joints = await _services.get_primary_joints(db)
         return primary_joints
@@ -85,13 +76,10 @@ async def get_muscle(db: _orm.Session = Depends(get_db), authorization: str = He
 
 
 @router.post("/exercise",response_model=_schemas.ExerciseBase)
-async def create_exercise(exercise: _schemas.ExerciseCreate, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+async def create_exercise(exercise: _schemas.ExerciseCreate, db: _orm.Session = Depends(get_db)):
     try:
         
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid or missing access token")
-
-        _helpers.verify_jwt(authorization, "User")
+        
         
         new_exercise = await _services.create_exercise(exercise,db)
         return new_exercise
