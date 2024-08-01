@@ -12,11 +12,13 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from fastapi_sqlalchemy import DBSessionMiddleware
 import jwt
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from starlette.status import HTTP_401_UNAUTHORIZED
 from app.core.main_router import router as main_router
 from app.user import user_router
 from app.Client import client_router
@@ -35,11 +37,10 @@ JWT_SECRET = os.getenv("JWT_SECRET", "")
 JWT_EXPIRY = os.getenv("JWT_EXPIRY", "")
 ROOT_PATH = '/fastapi'
 
+bearer_scheme = HTTPBearer()
 
-async def jwt_middleware(
-    request: Request,
-    authorization: Annotated[str, Header(description="JWT authorization token")],
-):
+async def authorization(request: Request, credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)]):
+    authorization = credentials.credentials
     myroutes = ("/workout")
     if not request.url.path.startswith(myroutes) and not request.url.path.startswith(ROOT_PATH+myroutes):
         return
@@ -68,11 +69,9 @@ async def jwt_middleware(
     request.state.user = payload
 
 
-root_router = APIRouter()
+root_router = APIRouter(dependencies=[Depends(authorization)])
 
-app = FastAPI(
-    title="Lets Move API", root_path=ROOT_PATH, dependencies=[Depends(jwt_middleware)]
-)
+app = FastAPI(title="Lets Move API", root_path=ROOT_PATH)
 
 app.add_middleware(
     CORSMiddleware,
@@ -82,19 +81,18 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-
 app.include_router(main_router)
-app.include_router(user_router)
-app.include_router(client_router)
-app.include_router(coach_router)
-app.include_router(membership_router)
-app.include_router(event_router)
-app.include_router(leads_router)
-app.include_router(mealplan_router)
-app.include_router(food_router)
+root_router.include_router(user_router)
+root_router.include_router(client_router)
+root_router.include_router(coach_router)
+root_router.include_router(membership_router)
+root_router.include_router(event_router)
+root_router.include_router(leads_router)
+root_router.include_router(mealplan_router)
+root_router.include_router(food_router)
+root_router.include_router(exercise_router)
+root_router.include_router(workout_router)
 app.include_router(root_router)
-app.include_router(exercise_router)
-app.include_router(workout_router)
 
 AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL")
 # logging.basicConfig(level=logging.INFO)
