@@ -32,7 +32,7 @@ class MealPlanBase(BaseModel):
 
 class CreateMealPlan(MealPlanBase):
     meals: List[CreateMeal]
-    member_id: Optional[List[int]]
+    member_ids: List[int]
     created_at: Optional[datetime.datetime] = datetime.datetime.now()
 
     class Config:
@@ -79,7 +79,7 @@ class MealPlanFilterParams(BaseModel):
         return value
     
 class ShowMealPlan(BaseModel):
-    id: int
+    meal_plan_id: int
     org_id : int
     name: Optional[str] = None
     profile_img: Optional[str] = None
@@ -89,7 +89,7 @@ class ShowMealPlan(BaseModel):
     created_by: Optional[int] = None
     created_at: Optional[datetime.datetime] = None
     updated_by: Optional[int] = None
-    updated_at: Optional[datetime.datetime] = None\
+    updated_at: Optional[datetime.datetime] = None
         
 class MemberMealPlanBase(BaseModel):
     id: int

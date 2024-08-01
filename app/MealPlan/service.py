@@ -23,7 +23,7 @@ def get_db():
         
 def get_meal_plan_by_id(id: int, db: _orm.Session):
     query = db.query(
-        _models.MealPlan.id,
+        _models.MealPlan.id.label('meal_plan_id'),
         _models.MealPlan.name,
         _models.MealPlan.profile_img,
         _models.MealPlan.visible_for,
@@ -37,18 +37,13 @@ def get_meal_plan_by_id(id: int, db: _orm.Session):
                 'quantity', _models.Meal.quantity
             )
         ).label('meals')
-    ).outerjoin(
+    ).join(
         _models.Meal, _models.MealPlan.id == _models.Meal.meal_plan_id
     ).filter(
         _models.MealPlan.id == id,
         _models.MealPlan.is_deleted == False
     ).group_by(
-        _models.MealPlan.id,
-        _models.MealPlan.name,
-        _models.MealPlan.org_id,
-        _models.MealPlan.profile_img,
-        _models.MealPlan.visible_for,
-        _models.MealPlan.description,
+        _models.MealPlan.id
     )
 
     db_meal_plan = query.first()
@@ -110,7 +105,7 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session,params: _schemas.Meal
    
 def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session):
     # Remove the 'meals' field from the meal plan dictionary if it exists
-    meal_plan_dict = meal_plan.dict(exclude={'meals'})
+    meal_plan_dict = meal_plan.dict(exclude={'meals','member_id'})
     db_meal_plan = _models.MealPlan(**meal_plan_dict)
     db.add(db_meal_plan)
     db.commit()

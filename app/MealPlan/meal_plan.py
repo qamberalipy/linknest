@@ -32,7 +32,7 @@ async def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session 
         new_meal_plan = _service.create_meal_plan(meal_plan, db)
 
         _service.create_meal(new_meal_plan.id,meal_plan.meals, db)
-        _service.create_member_meal_plan(new_meal_plan.id, meal_plan.member_id)
+        _service.create_member_meal_plan(new_meal_plan.id, meal_plan.member_id,db)
 
         return new_meal_plan
     except IntegrityError as e:
@@ -43,7 +43,7 @@ async def create_meal_plan(meal_plan: _schemas.CreateMealPlan, db: _orm.Session 
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
    
 
-@router.get("/meal_plan", response_model=_schemas.ShowMealPlan)
+@router.get("/meal_plan/{id}", response_model=_schemas.ShowMealPlan)
 async def get_meal_plans(id:int , db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:
         if not authorization or not authorization.startswith("Bearer "):
@@ -81,15 +81,15 @@ async def update_meal_plan(meal_plan: _schemas.UpdateMealPlan, db: _orm.Session 
    
 
 
-@router.delete("/meal_plan", response_model=_schemas.ReadMealPlan)
-async def delete_meal_plan(meal_plan: _schemas.DeleteMealPlan, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
+@router.delete("/meal_plan/{id}", response_model=_schemas.ReadMealPlan)
+async def delete_meal_plan(id:int, db: _orm.Session = Depends(get_db), authorization: str = Header(None)):
     try:
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid or missing access token")
 
         _helpers.verify_jwt(authorization, "User")
 
-        deleted_meal_plan = _service.delete_meal_plan(meal_plan.id, db)
+        deleted_meal_plan = _service.delete_meal_plan(id, db)
         if deleted_meal_plan is None:
             raise HTTPException(status_code=404, detail="Meal plan not found")
         return deleted_meal_plan
