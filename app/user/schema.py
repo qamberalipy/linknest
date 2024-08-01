@@ -207,6 +207,7 @@ class RoleRead(pydantic.BaseModel):
     org_id: Optional[int] = None
     status: Optional[bool] = None
     permission_id: Optional[int] = None
+    resource_id: Optional[int] = None
     access_type: Optional[str] = None
     is_parent: Optional[bool] = None
     parent: Optional[str] = None
