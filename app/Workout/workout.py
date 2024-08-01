@@ -40,8 +40,8 @@ from .schema import (
 from ..Client import schema as _client_schema
 from ..Exercise import service as _exercise_service
 
-
-router = APIRouter(tags=["Workout router"])
+API_STR = "/workout_plans"
+router = APIRouter(prefix=API_STR, tags=["Workout router"])
 
 
 async def verify_update_workout_day_exercise(
@@ -366,7 +366,7 @@ async def delete_day(
         raise e
 
 
-@router.get("/")
+@router.get("")
 async def get_all(
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[WorkoutFilter, Depends(get_filters)],
@@ -385,7 +385,7 @@ async def get_one(
     return workout
 
 
-@router.post("/")
+@router.post("")
 async def save(
     workout: WorkoutCreate,
     db: Annotated[Session, Depends(get_db)],
