@@ -18,7 +18,7 @@ import os
 import bcrypt as _bcrypt
 from . import models, schema
 import logging
-
+import pydantic
 # Load environment variables
 
 logger = logging.getLogger("uvicorn.error")
@@ -304,7 +304,7 @@ async def create_role(role: _schemas.RoleCreate, db: _orm.Session = _fastapi.Dep
 
 
 async def get_all_roles(org_id: int, db: _orm.Session):
-    return db.query(*_models.Role.__table__.columns,_models.Resource.name.label("resource_name"), _models.Role.name.label("role_name"), _models.Role.id.label("role_id"))\
+    return db.query(_models.Role.name.label("role_name"), _models.Role.id.label("role_id"))\
         .filter(_models.Role.is_deleted == False, _models.Role.org_id == org_id).all()
 
 async def temp_get_role(role_id: int, db: _orm.Session):
@@ -329,79 +329,20 @@ async def test_get_role(role_id: int, db: _orm.Session):
     if role is None:
         raise _fastapi.HTTPException(status_code=404, detail="Role not found")
   
-    # permissions = db.query(
-    #     _models.Resource.name.label("resource_name"),
-    #     _models.Permission.access_type,
-    #     _models.Role.org_id,
-    #     _models.Role.status,
-    #     _models.Permission.id.label("permission_id"),
-    #     _models.Role.id.label("role_id"),
-    #     _models.Resource.code,
-    #     _models.Resource.link,
-    #     _models.Resource.icon,
-    #     _models.Resource.is_parent,
-    #     _models.Resource.parent
-    # ).join(
-    #     _models.Permission, _models.Resource.id == _models.Permission.resource_id
-    # ).join(
-    #     _models.Role, _models.Permission.role_id == _models.Role.id
-    # ).filter(
-    #     _models.Permission.role_id == role_id,
-    #     _models.Permission.is_deleted == False
-    # ).options(
-    #     _orm.joinedload(_models.Resource.children)
-    # ).all()
-    # permissions = db.query(_models.Resource).options(_orm.joinedload(_models.Resource.children)).all()
-    # print(permissions)
-
-    # First, query with expressions
     permissions = db.query(
         _models.Resource
-    ).filter(
-        _models.Resource.is_parent == True,
-        _models.Permission.role_id == role_id,
-        _models.Permission.is_deleted == False,
     ).options(
         _orm.joinedload(_models.Resource.children)
+    ).filter(
+        # _models.Resource.is_parent == True,
+        _models.Permission.role_id == role_id,
+        _models.Permission.is_deleted == False,
     ).all()
-    print("Hello World")
-    # .join(
-    #     _models.Permission, _models.Resource.id == _models.Permission.resource_id
-    # ).join(
-    #     _models.Role, _models.Permission.role_id == _models.Role.id
-    # )
-    # permissions = db.query(_models.Resource).options(_orm.joinedload(_models.Resource.children)).all()
-    print(permissions)
-    # Then, load children separately
-    # resource_ids = [permission.resource_id for permission in permissions]
-    # resources = db.query(_models.Resource).filter(_models.Resource.id.in_(resource_ids)).options(
-    #     _orm.joinedload(_models.Resource.children)
-    # ).all()
-    # # print(resources)
-    # # Create a mapping from resource_id to resource with children loaded
-    # resource_map = {resource.id: resource for resource in resources}
+    
+    permissions = [p for p in permissions if p.is_root]
 
-    # Construct a list of dictionaries to include children
-    # permission_results = []
-    # for permission in permissions:
-    #     resource_id = permission.resource_id
-    #     resource_children = resource_map[resource_id].children
-    #     permission_dict = {
-    #         "resource_name": permission.resource_name,
-    #         "access_type": permission.access_type,
-    #         "org_id": permission.org_id,
-    #         "status": permission.status,
-    #         "permission_id": permission.permission_id,
-    #         "role_id": permission.role_id,
-    #         "code": permission.code,
-    #         "link": permission.link,
-    #         "icon": permission.icon,
-    #         "is_parent": permission.is_parent,
-    #         "parent": permission.parent,
-    #         "children": resource_children
-    #     }
-    #     permission_results.append(permission_dict)
-    # print(permissions)
+    # permission_pydantic = pydantic.parse_obj_as(List[_schemas.RoleRead], permissions)
+
     return permissions
 
 
