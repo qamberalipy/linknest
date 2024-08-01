@@ -31,7 +31,6 @@ def get_db():
     finally:
         db.close()
 
-<<<<<<< HEAD
 @router.post("/register/admin")
 async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(get_db)):
     print("Here 1", user.email, user.password, user.first_name)
@@ -109,8 +108,6 @@ async def read_sources(db: _orm.Session = Depends(get_db)):
     if not sources:
         raise HTTPException(status_code=404, detail="No sources found")
     return sources
-=======
->>>>>>> feature/workout_plans
 
 
 @router.get("/staff",response_model=List[_schemas.getStaff],tags=["Staff APIs"])
