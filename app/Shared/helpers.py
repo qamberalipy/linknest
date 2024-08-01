@@ -7,14 +7,11 @@ import email_validator as _email_check
 import fastapi as _fastapi
 import fastapi.security as _security
 import app.core.db.session as _database
-import app.user.schema as _u_schemas
-import app.Coach.schema as _co_schemas
-import app.user.models as _models
+from .schema import UserBase, CoachBase
 
-oauth2_scheme = _security.OAuth2PasswordBearer(tokenUrl="token")
 user_type_mapping = {
-    "User": _u_schemas.UserBase,
-    "Coach": _co_schemas.CoachBase
+    "User": UserBase,
+    "Coach": CoachBase
 }
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_EXPIRY = os.getenv("JWT_EXPIRY")
@@ -72,24 +69,4 @@ def refresh_jwt(refresh_token: str):
         raise _fastapi.HTTPException(status_code=400, detail="Refresh token expired")
     except jwt.InvalidTokenError:
         raise _fastapi.HTTPException(status_code=400, detail="Invalid refresh token")
-    
-async def get_current_user(token: Annotated[str, _fastapi.Depends(oauth2_scheme)]):
-    credentials_exception = _fastapi.HTTPException(
-        status_code=_fastapi.status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        print("Token time: ", (time.time() - payload["token_time"]) > int(JWT_EXPIRY), time.time() - payload["token_time"], int(JWT_EXPIRY))
-        if (time.time() - payload["token_time"]) > int(JWT_EXPIRY):
-            raise credentials_exception
-        # if payload['user_type'] != str.lower():
-        #     raise credentials_exception
-
-        return payload
-
-    except jwt.InvalidTokenError:
-        raise credentials_exception
     
