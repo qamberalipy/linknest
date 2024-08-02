@@ -34,8 +34,8 @@ class Category(pydantic.BaseModel):
 
 class ExerciseFilterParams(pydantic.BaseModel):
     category : Optional[int] = None
-    equipment : Optional[List[int]] = None
-    primary_muscle: Optional[List[int]] = None
+    equipment : Optional[List[int]] = []
+    primary_muscle: Optional[List[int]] = []
     search_key: Optional[str] = None
     sort_order: Optional[str] = None
     limit:Optional[int] = None

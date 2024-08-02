@@ -1,5 +1,5 @@
 from typing import Annotated
-from sqlalchemy import and_, desc, func, or_
+from sqlalchemy import and_, desc, func, or_, select
 import sqlalchemy.orm as _orm
 import fastapi as _fastapi
 import fastapi.security as _security
@@ -187,19 +187,16 @@ async def get_exercise(org_id:int,params: _schemas.ExerciseFilterParams,db: _orm
     SecondaryMuscle = aliased(_models.Muscle)
     PrimaryJoint = aliased(_models.PrimaryJoint)
     Equipment = aliased(_models.Equipment)
-
+    
     equipment_query = db.query(
-        _models.ExerciseEquipment.exercise_id,
-        func.json_agg(
-            func.json_build_object('id',Equipment.id, 'name',Equipment.equipment_name)
-        ).label('equipments')
+    _models.ExerciseEquipment.exercise_id,
+    func.json_agg(
+        func.json_build_object('id',Equipment.id, 'name',Equipment.equipment_name)
+    ).label('equipments')
     ).join(
         Equipment, _models.ExerciseEquipment.equipment_id == Equipment.id
-    ).group_by(_models.ExerciseEquipment.exercise_id).subquery()
-    
-    if params.equipment:
-        equipment_query = equipment_query.filter(_models.Equipment.id.in_(params.equipment))
-
+    ).filter(_models.ExerciseEquipment.equipment_id.in_(params.equipment)).group_by(_models.ExerciseEquipment.exercise_id)    
+ 
     primary_muscle_query = db.query(
         _models.ExercisePrimaryMuscle.exercise_id,
         func.json_agg(
@@ -207,9 +204,17 @@ async def get_exercise(org_id:int,params: _schemas.ExerciseFilterParams,db: _orm
         ).label('primary_muscles')
     ).join(
         PrimaryMuscle, _models.ExercisePrimaryMuscle.muscle_id == PrimaryMuscle.id
-    ).group_by(_models.ExercisePrimaryMuscle.exercise_id).subquery()
+    ).group_by(_models.ExercisePrimaryMuscle.exercise_id)
 
+    if params.equipment:
+        equipment_query = equipment_query.filter(_models.ExerciseEquipment.equipment_id.in_(params.equipment))
 
+    if params.primary_muscle:
+        primary_muscle_query = primary_muscle_query.filter(PrimaryMuscle.id.in_(params.primary_muscle))
+
+    equipment_query=equipment_query.subquery()
+    primary_muscle_query=primary_muscle_query.subquery()    
+         
     secondary_muscle_query = db.query(
        _models.ExerciseSecondaryMuscle.exercise_id,
         func.json_agg(
@@ -218,7 +223,6 @@ async def get_exercise(org_id:int,params: _schemas.ExerciseFilterParams,db: _orm
     ).join(
         SecondaryMuscle, _models.ExerciseSecondaryMuscle.muscle_id == SecondaryMuscle.id
     ).group_by( _models.ExerciseSecondaryMuscle.exercise_id).subquery()
-
 
     primary_joint_query = db.query(
          _models.ExercisePrimaryJoint.exercise_id,
@@ -270,11 +274,8 @@ async def get_exercise(org_id:int,params: _schemas.ExerciseFilterParams,db: _orm
         query = query.filter(or_(
             _models.Exercise.exercise_name.ilike(search_pattern)))
 
-    if params.category!=0:
+    if params.category:
         query = query.filter(_models.ExerciseCategory.id == params.category)
-
-    if params.primary_muscle:
-        query = query.filter(_models.Muscle.id.in_(params.primary_muscle))
 
     query = query.offset(params.offset).limit(params.limit)
 
