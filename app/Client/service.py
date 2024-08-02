@@ -89,15 +89,14 @@ async def create_client_membership(
     return db_client_membership
 
 
-async def create_client_coach(
-    client_coach: _schemas.CreateClientCoach,
-    db: _orm.Session = _fastapi.Depends(get_db),
-):
-    db_client_coach = _models.ClientCoach(**client_coach.dict())
-    db.add(db_client_coach)
+async def create_client_coach(client_id : int, coach_ids : List[int], db: _orm.Session = _fastapi.Depends(get_db)):
+    member_coach = [
+        _models.ClientCoach(client_id=client_id, coach_id=coach_id)
+        for coach_id in coach_ids
+    ]
+    db.add_all(member_coach)
     db.commit()
-    db.refresh(db_client_coach)
-    return db_client_coach
+    return member_coach
 
 
 async def authenticate_client(
@@ -208,23 +207,31 @@ async def update_client_membership(
     return db_client_membership
 
 
-async def update_client_coach(
-    client_id: int, coach_id: int, db: _orm.Session = _fastapi.Depends(get_db)
-):
-    db_client_coach = (
-        db.query(_models.ClientCoach)
-        .filter(_models.ClientCoach.client_id == client_id)
-        .first()
-    )
-    if not db_client_coach:
-        db_client_coach = _models.ClientCoach(client_id=client_id, coach_id=coach_id)
-        db.add(db_client_coach)
-    else:
-        db_client_coach.coach_id = coach_id
+async def update_client_coach(client_id: int, coach_ids: List[int], db: _orm.Session = _fastapi.Depends(get_db)):
+    existing_coaches = db.query(_models.ClientCoach).filter(_models.ClientCoach.client_id == client_id).all()
+    existing_coach_ids = {coach.coach_id for coach in existing_coaches}
+
+    # Coaches to add
+    new_coach_ids = set(coach_ids)
+    coaches_to_add = new_coach_ids - existing_coach_ids
+
+    # Coaches to remove
+    coaches_to_remove = existing_coach_ids - new_coach_ids
+
+    # Remove coaches
+    if coaches_to_remove:
+        db.query(_models.ClientCoach).filter(
+            _models.ClientCoach.client_id == client_id,
+            _models.ClientCoach.coach_id.in_(coaches_to_remove)
+        ).delete(synchronize_session=False)
+
+    # Add new coaches
+    for coach_id in coaches_to_add:
+        db.add(_models.ClientCoach(client_id=client_id, coach_id=coach_id))
+
 
     db.commit()
-    db.refresh(db_client_coach)
-    return db_client_coach
+    return db.query(_models.ClientCoach).filter(_models.ClientCoach.client_id == client_id).all()
 
 
 async def delete_client(client_id: int, db: _orm.Session = _fastapi.Depends(get_db)):
@@ -271,7 +278,10 @@ async def get_total_clients(
 
 
 def get_filtered_clients(
-    db: _orm.Session, params: _schemas.ClientFilterParams
+    db: _orm.Session,
+    org_id:int,
+    params: _schemas.ClientFilterParams
+
 ) -> List[_schemas.ClientFilterRead]:
     # Create a base query with the necessary joins
     query = db.query(
@@ -298,9 +308,10 @@ def get_filtered_clients(
     ).join(
         _coach_models.Coach, _models.ClientCoach.coach_id == _coach_models.Coach.id
     ).filter(
-        _models.ClientOrganization.org_id == params.org_id,
+        _models.ClientOrganization.org_id == org_id,
         _models.ClientOrganization.is_deleted == False,
-        _models.Client.is_deleted==False
+        _models.Client.is_deleted==False,
+        _coach_models.Coach.is_deleted == False
     )
 
     sort_order = (
@@ -310,13 +321,12 @@ def get_filtered_clients(
     )
 
     # Apply filters conditionally
-    if params.client_name:
-        query = query.filter(
-            or_(
-                _models.Client.first_name.ilike(f"%{params.client_name}%"),
-                _models.Client.last_name.ilike(f"%{params.client_name}%"),
-            )
-        )
+
+    if params.member_name:
+        query = query.filter(or_(
+            _models.Client.first_name.ilike(f"%{params.member_name}%"),
+            _models.Client.last_name.ilike(f"%{params.member_name}%")
+        ))
 
     if params.status:
         query = query.filter(
@@ -414,7 +424,6 @@ async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientBy
             _models.Client.created_by,
             _models.Client.updated_by,
             _models.Client.is_deleted,
-            _models.ClientCoach.coach_id,
             _models.ClientOrganization.org_id,
             _models.ClientMembership.membership_plan_id,
         )
@@ -439,6 +448,17 @@ async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientBy
         )
         if business_client:
             business_name = business_client.first_name
+
+    coaches = db.query(
+    _models.ClientCoach.coach_id,
+        func.concat(_coach_models.Coach.first_name, ' ', _coach_models.Coach.last_name).label("coach_name")
+    ).join(
+        _coach_models.Coach, _coach_models.Coach.id == _models.ClientCoach.coach_id
+    ).filter(
+        _models.ClientCoach.client_id == client_id
+    ).all()
+
+    coach_list = [{"coach_id": coach.coach_id, "coach_name": coach.coach_name} for coach in coaches]
 
     return _schemas.ClientByID(
         id=result.id,
@@ -478,7 +498,7 @@ async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientBy
         updated_by=result.updated_by,
         is_deleted=result.is_deleted,
         business_name=business_name,
-        coach_id=result.coach_id,
+        coach_id=coach_list,
         org_id=result.org_id,
         membership_plan_id=result.membership_plan_id
     )
