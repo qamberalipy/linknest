@@ -90,8 +90,8 @@ class Resource(_database.Base):
     name=_sql.Column(_sql.String(50))
     code=_sql.Column(_sql.String(50))
     parent = _sql.Column(_sql.String(50))
-    is_root = _sql.Column(_sql.Boolean)
     is_parent = _sql.Column(_sql.Boolean)
+    is_root = _sql.Column(_sql.Boolean)
     link = _sql.Column(_sql.String(50))
     icon = _sql.Column(_sql.String(50))
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
@@ -100,12 +100,6 @@ class Resource(_database.Base):
     updated_by = _sql.Column(_sql.Integer)
     is_deleted=_sql.Column(_sql.Boolean)
 
-    # resources = _orm.relationship(
-    #     "Permission",
-    #     lazy="noload",
-    #     primaryjoin="Resource.id==foreign(Permission.resource_id)",
-    #     back_populates="resource"
-    # )
     # self join of parent with code
     rel_parent = _orm.relationship(
         "Resource",
@@ -121,6 +115,12 @@ class Resource(_database.Base):
         remote_side=[parent],
         back_populates="rel_parent"
     )
+    resources = _orm.relationship(
+        "Permission",
+        lazy="noload",
+        primaryjoin="Resource.id==foreign(Permission.resource_id)",
+        back_populates="resource"
+    )
 
 class Permission(_database.Base):
     __tablename__ = 'permission'
@@ -134,13 +134,13 @@ class Permission(_database.Base):
     updated_by = _sql.Column(_sql.Integer)
     is_deleted=_sql.Column(_sql.Boolean)
 
-    # resource = _orm.relationship(
-    #     "Resource",
-    #     lazy="noload",
-    #     primaryjoin="Permission.resource_id==foreign(Resource.id)",
-    #     back_populates="resources"
-    # )
+    resource = _orm.relationship(
+        "Resource",
+        lazy="noload",
+        primaryjoin="foreign(Resource.id)==Permission.resource_id",
+        back_populates="resources"
 
+    )
 class Bank_detail(_database.Base):
     __tablename__ = 'bank_detail'
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
