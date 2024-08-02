@@ -33,9 +33,6 @@ class ClientBase(pydantic.BaseModel):
     created_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
 
-class ClientTokenBase(pydantic.BaseModel):
-    id: int
-
 class ClientRead(ClientBase):
     id: int
     
