@@ -31,26 +31,26 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/register/admin")
-async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(get_db)):
-    print("Here 1", user.email, user.password, user.first_name)
-    db_user = await _services.get_user_by_email(user.email, db)
-    print(f"User: {db_user}")
-    print("Here 2")
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+# @router.post("/register/admin")
+# async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(get_db)):
+#     print("Here 1", user.email, user.password, user.first_name)
+#     db_user = await _services.get_user_by_email(user.email, db)
+#     print(f"User: {db_user}")
+#     print("Here 2")
+#     if db_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
     
-    organization_details = _schemas.OrganizationCreate(org_name=user.org_name)
-    organization = await _services.create_organization(organization_details, db)
+#     organization_details = _schemas.OrganizationCreate(org_name=user.org_name)
+#     organization = await _services.create_organization(organization_details, db)
 
-    user_data = user.dict()
-    user_data['org_id'] = organization.id
-    user_data.pop('org_name')
+#     user_data = user.dict()
+#     user_data['org_id'] = organization.id
+#     user_data.pop('org_name')
 
-    user_register = _schemas.UserRegister(**user_data, created_at=datetime.datetime.utcnow())
-    new_user = await _services.create_user(user_register, db)
+#     user_register = _schemas.UserRegister(**user_data, created_at=datetime.datetime.utcnow())
+#     new_user = await _services.create_user(user_register, db)
     
-    return new_user
+#     return new_user
 
 
 # @router.post("/login")
@@ -80,18 +80,18 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
 #     }
 
 
-@router.post("/test_token")
-async def test_token(
-        token: str,
-        db: _orm.Session = Depends(get_db)
-    ):
-    print("Token 1: ", token)
-    payload = _helpers.verify_jwt(token, "User")
-    return payload
+# @router.post("/test_token")
+# async def test_token(
+#         token: str,
+#         db: _orm.Session = Depends(get_db)
+#     ):
+#     print("Token 1: ", token)
+#     payload = _helpers.verify_jwt(token, "User")
+#     return payload
 
-@router.post("/refresh_token", tags=["Auth"])
-async def refresh_token(refresh_token: str = Header(None, alias="refresh_token")):
-    return _helpers.refresh_jwt(refresh_token)
+# @router.post("/refresh_token", tags=["Auth"])
+# async def refresh_token(refresh_token: str = Header(None, alias="refresh_token")):
+#     return _helpers.refresh_jwt(refresh_token)
 
 
 @router.get("/staff/list",response_model=List[_schemas.getStaff],tags=["Staff APIs"])
