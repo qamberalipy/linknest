@@ -42,8 +42,11 @@ class User(_database.Base):
     is_deleted = _sql.Column(_sql.Boolean, default=False)
     
     def verify_password(self, password: bytes):
-        print("In Verify Password", password, self.password.encode('utf-8'))
-        return _bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
+        if self.password is not None:
+            print("In Verify Password", password, self.password.encode('utf-8'))
+            return _bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
+        else:
+            False
 
 class Country(_database.Base):
     __tablename__ = "country"
@@ -90,6 +93,7 @@ class Resource(_database.Base):
     name=_sql.Column(_sql.String(50))
     code=_sql.Column(_sql.String(50))
     parent = _sql.Column(_sql.String(50))
+    is_root = _sql.Column(_sql.Boolean)
     is_parent = _sql.Column(_sql.Boolean)
     link = _sql.Column(_sql.String(50))
     icon = _sql.Column(_sql.String(50))

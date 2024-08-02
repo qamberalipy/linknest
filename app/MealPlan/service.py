@@ -5,6 +5,7 @@ import app.core.db.session as _database
 import app.MealPlan.schema as _schemas
 import app.MealPlan.models as _models
 import app.Shared.helpers as _helpers
+import app.Food.models as _foodmodel
 from typing import List
 from sqlalchemy import func, or_ ,asc, desc, cast, String
 from sqlalchemy.sql import and_  
@@ -109,6 +110,8 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Mea
 
     # if params.assign_to:
     #     query = query.filter(_models.MealPlan.assign_to.ilike(f"%{params.assign_to}%"))
+    if params.food_nutrients:
+        query = query.filter(_foodmodel.Food.name.ilike(params.food_nutrients))
     
     query = query.offset(params.offset).limit(params.limit)
 
@@ -142,10 +145,11 @@ def create_member_meal_plan(meal_plan_id : int, member_ids: List[int], db: _orm.
 def update_meal_plan(meal_plan_id: int, meal_plan: _schemas.UpdateMealPlan, db: _orm.Session):
     try:
         # Retrieve the existing meal plan
-        db_meal_plan = db.query(_models.MealPlan).filter(_models.MealPlan.id == meal_plan_id).first()
+        db_meal_plan = db.query(_models.MealPlan).filter(_models.MealPlan.id == meal_plan_id, 
+                                _models.MealPlan.is_deleted == False).first()
         if not db_meal_plan:
-            raise HTTPException(status_code=404, detail="Meal plan not found")
-
+            return None
+     
         # Update meal plan details
         for key, value in meal_plan.dict(exclude={'meals', 'member_id'}, exclude_unset=True).items():
             setattr(db_meal_plan, key, value)
