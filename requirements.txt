@@ -1,7 +1,7 @@
 bcrypt
 cryptography
 email-validator
-fastapi
+fastapi==0.111.0
 passlib
 psycopg2-binary
 pydantic
