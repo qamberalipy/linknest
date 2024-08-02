@@ -41,7 +41,7 @@ class CoachUpdate(CoachBase):
     id: int
     is_deleted:Optional[bool] = False
     updated_by: Optional[int] = None
-    member_ids: Optional[List[int]] = None
+    member_ids: Optional[List[int]] = []
 
 class CoachRead(CoachBase):
     id:int
