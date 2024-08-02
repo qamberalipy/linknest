@@ -31,28 +31,6 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/register/admin")
-async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(get_db)):
-    print("Here 1", user.email, user.password, user.first_name)
-    db_user = await _services.get_user_by_email(user.email, db)
-    print(f"User: {db_user}")
-    print("Here 2")
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    organization_details = _schemas.OrganizationCreate(org_name=user.org_name)
-    organization = await _services.create_organization(organization_details, db)
-
-    user_data = user.dict()
-    user_data['org_id'] = organization.id
-    user_data.pop('org_name')
-
-    user_register = _schemas.UserRegister(**user_data, created_at=datetime.datetime.utcnow())
-    new_user = await _services.create_user(user_register, db)
-    
-    return new_user
-
-
 @router.post("/login")
 async def login(user: _schemas.GenerateUserToken,db: _orm.Session = Depends(get_db)):
     
@@ -137,8 +115,6 @@ async def register_staff(staff: _schemas.CreateStaff, db: _orm.Session = Depends
 @router.get("/staff/{id}", response_model=_schemas.GetStaffResponse, tags=["Staff APIs"])
 async def get_staff_by_id(id: int, db: _orm.Session = Depends(get_db)):
     try:
-        
-        
         print("Fetching staff with ID:", id)
         staff_list = await _services.get_one_staff(staff_id=id, db=db)
         print("Staff list:", staff_list)
@@ -275,7 +251,7 @@ async def edit_role(role: _schemas.RoleUpdate, db: _orm.Session = Depends(get_db
 
 
 
-@router.get("/role")#, response_model=List[_schemas.RoleRead], tags=["Roles and Permissions"])
+@router.get("/role", response_model=List[_schemas.RoleRead], tags=["Roles and Permissions"])
 async def get_roles(org_id: Optional[int] = None, role_id: Optional[int] = None, db: _orm.Session = Depends(get_db)):
     try:
         
