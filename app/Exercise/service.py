@@ -263,12 +263,12 @@ async def get_exercise(org_id:int,params: _schemas.ExerciseFilterParams,db: _orm
     primary_joint_query, Exercise.id == primary_joint_query.c.exercise_id).filter(
     Exercise.is_deleted == False and Exercise.org_id==org_id)
 
-    if params.search_key:
+    if params.search_key!='' and params.search_key is not None:
         search_pattern = f"%{params.search_key}%"
         query = query.filter(or_(
             _models.Exercise.exercise_name.ilike(search_pattern)))
 
-    if params.category:
+    if params.category!=0:
         query = query.filter(_models.ExerciseCategory.id == params.category)
 
     if params.equipment:
