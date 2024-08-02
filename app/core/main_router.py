@@ -5,6 +5,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import app.Shared.helpers as _helpers
 import sqlalchemy.orm as _orm
+
+from app.Shared.schema import UserBase
 from ..Shared.dependencies import get_db
 import app.user.schema as _schemas
 import app.user.models as _models
@@ -47,7 +49,6 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
     
     return new_user
 
-
 @router.post("/login")
 async def login(user: _schemas.GenerateUserToken,db: _orm.Session = Depends(get_db)):
     
@@ -66,14 +67,14 @@ async def login(user: _schemas.GenerateUserToken,db: _orm.Session = Depends(get_
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     login_attempts[user.email] = 0
-    # token = await _services.create_token(authenticated_user)
-    token = _helpers.create_token(authenticated_user, "User")
+    user_obj = UserBase.model_validate(authenticated_user)
+    user_obj = user_obj.model_dump()
+    token = _helpers.create_token(user_obj, "Staff")
     user_data = await _services.get_alluser_data(email=user.email, db=db)
     return {
         "user": user_data,
         "token": token
     }
-
 
 @router.post("/test_token")
 async def test_token(
@@ -83,8 +84,6 @@ async def test_token(
     print("Token 1: ", token)
     payload = _helpers.verify_jwt(token, "User")
     return payload
-
-    
 
 @router.get("/countries", response_model=List[_schemas.CountryRead])
 async def read_countries(db: _orm.Session = Depends(get_db)):

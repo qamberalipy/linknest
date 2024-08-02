@@ -182,16 +182,11 @@ async def delete_client(id:int, db: _orm.Session = Depends(get_db)):
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code = 400, detail="Data error occurred, check your input")
 
-    
-
-
 @router.post("/app/member/login", response_model=_schemas.ClientLoginResponse,  tags=["App Router"])
 async def login_client(client_data: _schemas.ClientLogin, db: _orm.Session = Depends(get_db)):
     try:
-        print(client_data)
-        result = await _services.login_client(client_data.email_address, client_data.wallet_address, db)
-        print(result)
-        return result
+      result = await _services.login_client(client_data.org_id,client_data.email_address, client_data.wallet_address, db)
+      return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 

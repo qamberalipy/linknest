@@ -33,6 +33,15 @@ class ClientBase(pydantic.BaseModel):
     created_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
 
+class ClientTokenBase(pydantic.BaseModel):
+    id: int
+
+class ClientRead(ClientBase):
+    id: int
+    
+    class Config:
+        from_attributes=True
+
 class ClientCreate(ClientBase):
     org_id: int
     coach_id: Optional[int] = None
@@ -96,11 +105,6 @@ class RegisterClientApp(pydantic.BaseModel):
 class RegisterClient(ClientBase):
     pass
 
-class ClientRead(ClientBase):
-    id: int
-    
-    class Config:
-        from_attributes=True
         
 class ClientLoginResponse(pydantic.BaseModel):
     is_registered: bool
@@ -178,6 +182,7 @@ class CreateClientCoach(ClientCoach):
     pass
     
 class ClientLogin(pydantic.BaseModel):
+    org_id: int
     email_address: str
     wallet_address: str
     

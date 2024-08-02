@@ -33,12 +33,10 @@ def create_mobilecoach(coach: _schemas.CoachAppBase, db: _orm.Session = Depends(
     return _services.create_appcoach(coach,db)
 
 
-@router.post("/app/coach/login", response_model=_schemas.CoachLoginResponse,  tags=["App Router"])
+@router.post("/app/coach/login")#, response_model=_schemas.CoachLoginResponse,  tags=["App Router"])
 async def login_coach(coach_data: _schemas.CoachLogin, db: _orm.Session = Depends(get_db)):
     try:
-        print(coach_data)
-        result = await _services.login_coach(coach_data.email_address, coach_data.wallet_address, db)
-        print(result)
+        result = await _services.login_coach(coach_data.org_id,coach_data.email_address, coach_data.wallet_address, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
