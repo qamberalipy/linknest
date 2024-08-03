@@ -1,5 +1,6 @@
 from datetime import date,datetime
 from typing import List, Dict, Any
+from typing import Annotated, List
 import jwt
 from sqlalchemy import asc, desc, func, or_
 import sqlalchemy.orm as _orm
@@ -165,7 +166,7 @@ async def authenticate_user(email: str, password: str, db: _orm.Session):
 
     if not user:
         return False
-   
+
     if not user.verify_password(password):
         return False
 
@@ -535,3 +536,22 @@ async def get_Total_count_staff(org_id: int, db: _orm.Session = _fastapi.Depends
     ).scalar()
     print(total_staffs)
     return total_staffs
+
+
+def get_filters(
+
+    search_key: Annotated[str, _fastapi.Query(title="Search Key")] = None,
+    staff_name: Annotated[str , _fastapi.Query(title="Staff Name")] = None,
+    role_name: Annotated[str,_fastapi.Query(title="Role Name")]=None,
+    sort_order: Annotated[str,_fastapi.Query(title="Sort Order")]=None,
+    limit: Annotated[int, _fastapi.Query(description="Pagination Limit")] = None,
+    offset: Annotated[int, _fastapi.Query(description="Pagination offset")] = None):
+    
+    return _schemas.StaffFilterParams(
+        search_key=search_key,
+        sort_order=sort_order,
+        staff_name=staff_name,
+        role_name=role_name,
+        limit=limit,
+        offset = offset
+    )
