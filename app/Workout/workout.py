@@ -1,4 +1,4 @@
-from typing import Annotated, Sequence
+from typing import Annotated, Any, Sequence
 from pydantic import EmailStr
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
@@ -24,7 +24,12 @@ from .service import (
 )
 
 from .models import Workout, WorkoutDay, WorkoutDayExercise, WorkoutGoal, WorkoutLevel
-from ..Shared.dependencies import get_db, get_pagination_options, get_user
+from ..Shared.dependencies import (
+    get_db,
+    get_module_permission,
+    get_pagination_options,
+    get_user,
+)
 from ..Shared.schema import PaginationOptions
 from .schema import (
     WorkoutCreate,
@@ -43,6 +48,9 @@ from ..Exercise import service as _exercise_service
 
 API_STR = "/workout_plans"
 router = APIRouter(prefix=API_STR, tags=["Workout router"])
+get_read_permission = get_module_permission("Workout Plans", "read")
+get_write_permission = get_module_permission("Workout Plans", "write")
+get_delete_permission = get_module_permission("Workout Plans", "delete")
 
 
 async def verify_update_workout_day_exercise(
@@ -194,15 +202,20 @@ def get_filters(
     )
 
 
-@router.get("/day/exercise")
+@router.get("/day/exercise", dependencies=[Depends(get_read_permission)])
 async def get_all_day_exercise(
     db: Annotated[Session, Depends(get_db)],
     pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
 ):
-    return await get_all_workout_day_exercise(db, WorkoutDayExerciseFilter(), pagination_options)
+    return await get_all_workout_day_exercise(
+        db, WorkoutDayExerciseFilter(), pagination_options
+    )
 
 
-@router.get("/day/exercise/{workout_day_exercise_id}")
+@router.get(
+    "/day/exercise/{workout_day_exercise_id}",
+    dependencies=[Depends(get_read_permission)],
+)
 async def get_one_exercise(
     workout_day_exercise_id: Annotated[int, Path(description="Id of the workout day")],
     db: Annotated[Session, Depends(get_db)],
@@ -214,7 +227,11 @@ async def get_one_exercise(
 
 
 @router.post(
-    "/day/exercise", dependencies=[Depends(verify_create_workout_day_exercise)]
+    "/day/exercise",
+    dependencies=[
+        Depends(verify_create_workout_day_exercise),
+        Depends(get_write_permission),
+    ],
 )
 async def save_exercise(
     workout_day_exercise: WorkoutDayExerciseCreate,
@@ -235,7 +252,10 @@ async def save_exercise(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/day/exercise/{workout_day_exercise_id}")
+@router.put(
+    "/day/exercise/{workout_day_exercise_id}",
+    dependencies=[Depends(get_write_permission)],
+)
 async def update_exercise(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[_client_schema.ClientRead, Depends(get_user)],
@@ -258,7 +278,10 @@ async def update_exercise(
         raise e
 
 
-@router.delete("/day/exercise/{workout_day_exercise_id}")
+@router.delete(
+    "/day/exercise/{workout_day_exercise_id}",
+    dependencies=[Depends(get_delete_permission)],
+)
 async def delete_exercise(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[_client_schema.ClientRead, Depends(get_user)],
@@ -280,17 +303,19 @@ async def delete_exercise(
         raise e
 
 
-@router.get("/day/{workout_day_id}/exercise")
+@router.get(
+    "/day/{workout_day_id}/exercise", dependencies=[Depends(get_read_permission)]
+)
 async def get_one_day_exercise(
     workout_day_id: Annotated[int, Path(description="Id of the workout")],
     db: Annotated[Session, Depends(get_db)],
 ):
     return await get_all_workout_day_exercise(
-        db, WorkoutDayExerciseFilter(workout_day_id=workout_day_id)
+        db, WorkoutDayExerciseFilter(workout_day_id=workout_day_id), PaginationOptions()
     )
 
 
-@router.get("/day")
+@router.get("/day", dependencies=[Depends(get_read_permission)])
 async def get_all_day(
     db: Annotated[Session, Depends(get_db)],
     pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
@@ -306,7 +331,7 @@ async def get_all_day(
     )
 
 
-@router.get("/day/{day_id}")
+@router.get("/day/{day_id}", dependencies=[Depends(get_read_permission)])
 async def get_one_day(
     day_id: Annotated[int, Path(description="Id of the workout day")],
     db: Annotated[Session, Depends(get_db)],
@@ -323,7 +348,7 @@ async def get_one_day(
     return workout
 
 
-@router.get("/{workout_id}/day")
+@router.get("/{workout_id}/day", dependencies=[Depends(get_read_permission)])
 async def get_day_by_workout_id(
     workout_id: Annotated[int, Path(description="Id of the workout")],
     db: Annotated[Session, Depends(get_db)],
@@ -338,11 +363,14 @@ async def get_day_by_workout_id(
     return await get_all_workout_day(
         db,
         WorkoutDayFilter(workout_id=workout_id, include_exercises=_include_exercises),
-        pagination_options
+        pagination_options,
     )
 
 
-@router.post("/day", dependencies=[Depends(verify_create_workout_day)])
+@router.post(
+    "/day",
+    dependencies=[Depends(verify_create_workout_day), Depends(get_write_permission)],
+)
 async def save_day(
     workout_day: WorkoutDayCreate,
     db: Annotated[Session, Depends(get_db)],
@@ -360,7 +388,7 @@ async def save_day(
         raise HTTPException(status_code=500, detail="Unknown exception occured")
 
 
-@router.put("/day/{day_id}")
+@router.put("/day/{day_id}", dependencies=[Depends(get_write_permission)])
 async def update_day(
     day_id: int,
     workout_day: WorkoutDayUpdate,
@@ -382,7 +410,7 @@ async def update_day(
         raise e
 
 
-@router.delete("/day/{day_id}")
+@router.delete("/day/{day_id}", dependencies=[Depends(get_delete_permission)])
 async def delete_day(
     day_id: int,
     db: Annotated[Session, Depends(get_db)],
@@ -410,7 +438,7 @@ async def get_all(
     return await get_all_workout(db, filters, pagination_options)
 
 
-@router.get("/{workout_id}")
+@router.get("/{workout_id}", dependencies=[Depends(get_read_permission)])
 async def get_one(
     workout_id: Annotated[int, Path(description="Id of the workout")],
     db: Annotated[Session, Depends(get_db)],
@@ -429,25 +457,25 @@ async def get_one(
     return workout
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(get_write_permission)])
 async def save(
     workout: WorkoutCreate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     try:
-        return await save_workout(db, workout, user_id=user.id)
+        return await save_workout(db, workout, user_id=user["id"])
     except DataError:
         db.rollback()
         raise HTTPException(
             status_code=400, detail="Data error occurred, check your input"
         )
-    except:
+    except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Unknown exception occured")
 
 
-@router.put("/{workout_id}")
+@router.put("/{workout_id}", dependencies=[Depends(get_write_permission)])
 async def update(
     workout_model: Annotated[Workout, Depends(verify_workout)],
     workout: WorkoutUpdate,
@@ -466,7 +494,7 @@ async def update(
         raise e
 
 
-@router.delete("/{workout_id}")
+@router.delete("/{workout_id}", dependencies=[Depends(get_delete_permission)])
 async def delete(
     workout_id: int,
     workout_model: Annotated[Workout, Depends(verify_workout)],
