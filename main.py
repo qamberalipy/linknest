@@ -49,14 +49,7 @@ async def authorization(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],
 ):
 
-    authorization = credentials.credentials
-
-    if not authorization or not authorization.startswith("Bearer"):
-        raise HTTPException(
-            status_code=401, detail="Invalid or missing access token"
-        )
-
-    token = authorization.split("Bearer ")[1]
+    token = credentials.credentials
     token_expection = HTTPException(
         status_code=HTTP_401_UNAUTHORIZED,
         detail="Token Expired or Invalid",
