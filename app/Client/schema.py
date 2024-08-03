@@ -1,11 +1,11 @@
 import pydantic
 import datetime 
 import datetime 
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Any
 
 class ClientBase(pydantic.BaseModel):
     profile_img: Optional[str] = None
-    own_member_id: str
+    own_member_id: str  
     first_name: str
     last_name: str
     gender: str
@@ -33,15 +33,10 @@ class ClientBase(pydantic.BaseModel):
     created_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
 
-class ClientRead(ClientBase):
-    id: int
-    
-    class Config:
-        from_attributes=True
 
 class ClientCreate(ClientBase):
     org_id: int
-    coach_id: Optional[int] = None
+    coach_id: Optional[List[int]] = []
     membership_plan_id: int
     status: str  # Corrected type annotation
     send_invitation: bool
@@ -71,7 +66,7 @@ class ClientCreateApp(pydantic.BaseModel):
     zipcode: Optional[str] = None
     client_since: Optional[datetime.date] = None
     org_id: Optional[int] = 0
-    coach_id: Optional[int] = None
+    coach_id: Optional[int] = 0
     status: Optional[str] = "pending"
     membership_plan_id: Optional[int] = 0
     is_deleted:Optional[bool]=False
@@ -101,6 +96,13 @@ class RegisterClientApp(pydantic.BaseModel):
         
 class RegisterClient(ClientBase):
     pass
+
+class ClientRead(ClientBase):
+    id: int
+    coach_id: List[int]
+    
+    class Config:
+        from_attributes=True
 
         
 class ClientLoginResponse(pydantic.BaseModel):
@@ -146,7 +148,7 @@ class ClientByID(pydantic.BaseModel):
     updated_by: Optional[int] = None
     is_deleted: bool
     business_name: Optional[str] = None
-    coach_id: Optional[int] = None
+    coach_id: Optional[List[Dict[str, Any]]] = []
     org_id: Optional[int] = None
     membership_plan_id: Optional[int] = None
 
@@ -173,7 +175,7 @@ class CreateClientMembership(ClientMembership):
 
 class ClientCoach(pydantic.BaseModel):
     client_id: int
-    coach_id: int
+    coach_id: List[int]
 
 class CreateClientCoach(ClientCoach):
     pass
@@ -229,9 +231,9 @@ class ClientFilterRead(pydantic.BaseModel):
         from_attributes=True
 
 class ClientFilterParams(pydantic.BaseModel):
-    org_id: int
+    
     search_key: Optional[str] = None
-    client_name: Optional[str] = None
+    member_name: Optional[str] = None
     status: Optional[str] = None
     sort_order: Optional[str] = None
     coach_assigned: Optional[int] = None
@@ -272,7 +274,7 @@ class ClientUpdate(pydantic.BaseModel):
     circumference_waist_navel:Optional[float]=0.0
     fat_percentage:Optional[float]=0.0
     muscle_percentage:Optional[float]=0.0
-    coach_id: Optional[int] = None
+    coach_id: Optional[List[int]] = []
     membership_id: Optional[int] = None
     org_id: Optional[int] = None
     status: Optional[str] = None
