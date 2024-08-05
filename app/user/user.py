@@ -137,7 +137,7 @@ async def delete_staff(id:int, db: _orm.Session = Depends(get_db)):
     
     
     
-@router.get("/staff", response_model=List[_schemas.GetStaffResponse], tags=["Staff APIs"])
+@router.get("/staff",tags=["Staff APIs"])
 async def get_staff(
     org_id: int,
     filters: Annotated[_schemas.StaffFilterParams, Depends(_services.get_filters)] = None,

@@ -222,57 +222,59 @@ async def delete_staff(staff_id: int, db: _orm.Session):
     db.commit()
     return {"detail": "Staff deleted successfully"}
 
-def get_filtered_staff(
-    db: _orm.Session,
-    org_id,
-    params: _schemas.StaffFilterParams
-) -> List[_schemas.StaffFilterRead]:
-    
+def get_filtered_staff(org_id: int, params: _schemas.StaffFilterParams,db:_orm.Session=_fastapi.Depends(get_db)):
     query = db.query(
-        *models.User.__table__.columns,_models.Role.name.label("role_name")    
+        *models.User.__table__.columns, models.Role.name.label("role_name")
     ).join(
-        _models.Role, _models.User.role_id == _models.Role.id
+        models.Role, models.User.role_id == models.Role.id
     ).filter(
-        _models.User.org_id == org_id,
-        _models.User.is_deleted == False
+        models.User.org_id == org_id,
+        models.User.is_deleted == False
     )
+
+    total_counts = db.query(func.count()).select_from(query.subquery()).scalar()
 
     if params.staff_name:
         query = query.filter(or_(
-            _models.User.first_name.ilike(f"%{params.staff_name}%"),
-            _models.User.last_name.ilike(f"%{params.staff_name}%")
+            models.User.first_name.ilike(f"%{params.staff_name}%"),
+            models.User.last_name.ilike(f"%{params.staff_name}%")
         ))
 
     if params.role_name:
-        query = query.filter(_models.Role.name.ilike(f"%{params.role_name}%"))
+        query = query.filter(models.Role.name.ilike(f"%{params.role_name}%"))
 
     if params.search_key:
         search_pattern = f"%{params.search_key}%"
         query = query.filter(or_(
-            _models.User.own_staff_id.ilike(search_pattern),
-            _models.User.first_name.ilike(search_pattern),
-            _models.User.last_name.ilike(search_pattern),
-            _models.User.email.ilike(search_pattern),
-            _models.User.mobile_number.ilike(search_pattern),
-            _models.User.profile_img.ilike(search_pattern),
-            _models.User.notes.ilike(search_pattern),
-            _models.User.city.ilike(search_pattern),
-            _models.User.zipcode.ilike(search_pattern),
-            _models.User.address_1.ilike(search_pattern),
-            _models.User.address_2.ilike(search_pattern)
+            models.User.own_staff_id.ilike(search_pattern),
+            models.User.first_name.ilike(search_pattern),
+            models.User.last_name.ilike(search_pattern),
+            models.User.email.ilike(search_pattern),
+            models.User.mobile_number.ilike(search_pattern),
+            models.User.profile_img.ilike(search_pattern),
+            models.User.notes.ilike(search_pattern),
+            models.User.city.ilike(search_pattern),
+            models.User.zipcode.ilike(search_pattern),
+            models.User.address_1.ilike(search_pattern),
+            models.User.address_2.ilike(search_pattern)
         ))
 
     if params.sort_key in extract_columns(query):       
         sort_order = desc(params.sort_key) if params.sort_order == "desc" else asc(params.sort_key)
-        query=query.order_by(sort_order)
-
+        query = query.order_by(sort_order)
     elif params.sort_key is not None:
-            raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
-        
-    staff = query.all()
-    return staff
-    
+        raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
 
+    filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()
+    
+    query=query.offset(params.offset).limit(params.limit)
+    
+    staff = query.all()
+    staff_data = [_schemas.GetStaffResponse.from_orm(user) for user in staff]
+
+    return {'data': staff_data, 'total_counts': total_counts, 'filtered_counts': filtered_counts}
+
+    
 async def check_role(role: _schemas.RoleCreate, db: _orm.Session = _fastapi.Depends(get_db)):
     ch_role = db.query(_models.Role).filter(_models.Role.name == role.name, _models.Role.org_id == role.org_id).first()
     

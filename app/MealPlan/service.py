@@ -13,6 +13,7 @@ from sqlalchemy.orm import aliased
 from fastapi import FastAPI, Header,APIRouter, Depends, HTTPException, Request, status
 from app.Exercise.service import extract_columns
 
+
 def create_database():
     return _database.Base.metadata.create_all(bind=_database.engine)
 
@@ -71,7 +72,8 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Mea
     ).filter(
         _models.MemberMealPlan.meal_plan_id == _models.MealPlan.id
     ).scalar_subquery()
-    
+    sort_order = desc(_models.MealPlan.created_at) if params.sort_order == "desc" else asc(_models.MealPlan.created_at)
+
     # Main query to get the meal plan details and associated meals
     query = db.query(
         _models.MealPlan.id.label('meal_plan_id'),
@@ -94,11 +96,9 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Mea
     ).filter(
         _models.MealPlan.org_id == org_id,
         _models.MealPlan.is_deleted == False
+    ).order_by(sort_order).group_by(
+        _models.MealPlan.id
     )
-    
-    if params.sort_key in extract_columns(query):       
-            sort_order = desc(params.sort_key) if params.sort_order == "desc" else asc(params.sort_key)
-            query=query.order_by(sort_order)
     if params.search_key:
         search_pattern = f"%{params.search_key}%"
         query = query.filter(or_(
@@ -106,6 +106,12 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Mea
             _models.MealPlan.description.ilike(search_pattern),
             # cast(_models.Meal.meal_time,String).ilike(search_pattern)
         ))
+
+    if params.sort_key in extract_columns(query):       
+            sort_order = desc(params.sort_key) if params.sort_order == "desc" else asc(params.sort_key)
+            query=query.order_by(sort_order)    
+    
+            
             
     if params.visible_for:
         query = query.filter(_models.MealPlan.visible_for == params.visible_for)
@@ -253,3 +259,4 @@ def delete_meal(meal_id: int, db: _orm.Session = _fastapi.Depends(get_db)):
         db.commit()
         db.refresh(db_meal)
     return db_meal
+

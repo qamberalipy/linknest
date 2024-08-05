@@ -271,7 +271,6 @@ async def get_exercise(params:Optional[_schemas.ExerciseFilterParams]=None,org_i
         check_organization=db.query(Exercise.org_id).filter(Exercise.org_id == org_id).first()
         if not check_organization:
             raise _fastapi.HTTPException(status_code=400, detail="Organization Not Found")
-
  
     equipment_query = db.query(
     _models.ExerciseEquipment.exercise_id,
