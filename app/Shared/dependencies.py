@@ -45,7 +45,7 @@ def get_module_permission(module: str, request_type: Literal["read","write","del
         access_type = (
             db.query(Permission.access_type)
             .join(Resource, Resource.id == Permission.resource_id)
-            .filter(Resource.name == module, Role.id == user["role_id"])
+            .filter(Resource.name == module, Permission.role_id == user["role_id"])
             .scalar()
         )
         if access_type == "full_access":

@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Sequence
+from typing import Annotated, Any, Sequence, Union
 from pydantic import EmailStr
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
@@ -14,7 +14,9 @@ from .service import (
     get_all_workout_day_exercise,
     get_workout,
     get_workout_day,
+    get_workout_day_,
     get_workout_day_exercise,
+    get_workout_filter,
     save_workout,
     save_workout_day,
     save_workout_day_exercise,
@@ -59,9 +61,10 @@ async def verify_update_workout_day_exercise(
         int, Path(description="Id of the workout day exercise")
     ],
     db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     db_workout_day_exercise = await get_workout_day_exercise(
-        db, workout_day_exercise_id
+        db, user, workout_day_exercise_id
     )
     if not db_workout_day_exercise:
         raise HTTPException(status_code=404, detail="Workout Day Exercise not found")
@@ -78,27 +81,25 @@ async def verify_create_workout_day_exercise(
     workout_day_exercise: WorkoutDayExerciseCreate,
     db: Annotated[Session, Depends(get_db)],
 ):
-    workout_day = await get_workout_day(db, workout_day_exercise.workout_day_id)
+    workout_day = await get_workout_day_(db, workout_day_exercise.workout_day_id)
     if not workout_day:
         raise HTTPException(status_code=404, detail="Workout Day not found")
     exercise = await _exercise_service.get_exercise_by_id(
         workout_day_exercise.exercise_id, db
     )
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found")
-
 
 async def verify_create_workout_day(
-    workout_day: WorkoutDayCreate, db: Annotated[Session, Depends(get_db)]
+    workout_day: WorkoutDayCreate, db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_user)],
 ):
-    workout = await get_workout(db, workout_day.workout_id)
+    workout = await get_workout(db, user["org_id"], workout_day.workout_id)
     if not workout:
         raise HTTPException(status_code=404, detail="Workout not found")
 
     params = WorkoutDayFilter(
         workout_id=workout_day.workout_id, week=workout_day.week, day=workout_day.day
     )
-    existing_workout_day = await get_all_workout_day(db, params=params)
+    existing_workout_day = await get_all_workout_day(db, params, PaginationOptions())
 
     if existing_workout_day:
         raise HTTPException(
@@ -116,8 +117,9 @@ async def verify_update_workout_day(
     workout_day: WorkoutDayUpdate,
     day_id: Annotated[int, Path(description="Id of the workout day")],
     db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_user)],
 ):
-    db_workout_day = await get_workout_day(db, day_id)
+    db_workout_day = await get_workout_day_(db, day_id)
     if not db_workout_day:
         raise HTTPException(status_code=404, detail="Workout Day not found")
 
@@ -128,15 +130,17 @@ async def verify_update_workout_day(
             workout_id=db_workout_day.workout_id, week=week, day=day
         )
 
-        existing_workout_day = await get_all_workout_day(db, params=params)
+        existing_workout_day = await get_all_workout_day(db, params, PaginationOptions())
 
-        if existing_workout_day and existing_workout_day[0].id != day_id:
+        if existing_workout_day and existing_workout_day[0]["id"] != day_id:
             raise HTTPException(
                 status_code=400,
                 detail=f"Workout day with week {week} and day {day} already exists",
             )
 
-    workout = await get_workout(db, db_workout_day.workout_id)
+    workout = await get_workout(db, user["org_id"], db_workout_day.workout_id)
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout associated with day not found")
     if workout_day.week and workout_day.week > workout.weeks:
         raise HTTPException(
             status_code=400, detail="Week exceeds the number of weeks in the workout"
@@ -148,7 +152,7 @@ async def verify_delete_workout_day(
     day_id: Annotated[int, Path(description="Id of the workout day")],
     db: Annotated[Session, Depends(get_db)],
 ):
-    db_workout_day = await get_workout_day(db, day_id)
+    db_workout_day = await get_workout_day_(db, day_id)
     if not db_workout_day:
         raise HTTPException(status_code=404, detail="Workout Day not found")
 
@@ -160,9 +164,10 @@ async def verify_delete_workout_day_exercise(
         int, Path(description="Id of the workout day exercise")
     ],
     db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     db_workout_day_exercise = await get_workout_day_exercise(
-        db, workout_day_exercise_id
+        db, user, workout_day_exercise_id
     )
     if not db_workout_day_exercise:
         raise HTTPException(status_code=404, detail="Workout Day Exercise not found")
@@ -172,8 +177,9 @@ async def verify_delete_workout_day_exercise(
 async def verify_workout(
     db: Annotated[Session, Depends(get_db)],
     workout_id: Annotated[int, Path(description="Id of the workout")],
+    user: Annotated[dict, Depends(get_user)],
 ):
-    workout_model = get_workout(db, workout_id)
+    workout_model = await get_workout(db, user["org_id"], workout_id)
     if not workout_model:
         raise HTTPException(status_code=404, detail="Workout doesn't exist")
     return workout_model
@@ -192,6 +198,9 @@ def get_filters(
     _include_days_and_exercises: Annotated[
         bool, Query(description="To include that workout's days and exercises")
     ] = False,
+    _created_by_user: Annotated[
+        bool, Query(description="Only include workouts created by the user")
+    ] = False,
 ):
     return WorkoutFilter(
         goals=goals,
@@ -199,17 +208,18 @@ def get_filters(
         search=_search,
         include_days=_include_days,
         include_days_and_exercises=_include_days_and_exercises,
+        created_by_user=_created_by_user
     )
 
 
-@router.get("/day/exercise", dependencies=[Depends(get_read_permission)])
-async def get_all_day_exercise(
-    db: Annotated[Session, Depends(get_db)],
-    pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
-):
-    return await get_all_workout_day_exercise(
-        db, WorkoutDayExerciseFilter(), pagination_options
-    )
+# @router.get("/day/exercise", dependencies=[Depends(get_read_permission)])
+# async def get_all_day_exercise(
+#     db: Annotated[Session, Depends(get_db)],
+#     pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
+# ):
+#     return await get_all_workout_day_exercise(
+#         db, WorkoutDayExerciseFilter(), pagination_options
+#     )
 
 
 @router.get(
@@ -219,8 +229,9 @@ async def get_all_day_exercise(
 async def get_one_exercise(
     workout_day_exercise_id: Annotated[int, Path(description="Id of the workout day")],
     db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_user)]
 ):
-    workout_day_exercise = await get_workout_day_exercise(db, workout_day_exercise_id)
+    workout_day_exercise = await get_workout_day_exercise(db, user, workout_day_exercise_id)
     if not workout_day_exercise:
         raise HTTPException(status_code=404, detail="Workout day not found")
     return workout_day_exercise
@@ -236,11 +247,11 @@ async def get_one_exercise(
 async def save_exercise(
     workout_day_exercise: WorkoutDayExerciseCreate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     try:
         return await save_workout_day_exercise(
-            db, workout_day_exercise, user_id=user.id
+            db, workout_day_exercise, user
         )
     except DataError:
         db.rollback()
@@ -258,7 +269,7 @@ async def save_exercise(
 )
 async def update_exercise(
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
     workout_day_exercise: WorkoutDayExerciseUpdate,
     workout_day_exercise_model: Annotated[
         WorkoutDay, Depends(verify_update_workout_day_exercise)
@@ -266,7 +277,7 @@ async def update_exercise(
 ):
     try:
         return await update_workout_day_exercise(
-            db, workout_day_exercise_model, workout_day_exercise, user_id=user.id
+            db, workout_day_exercise_model, workout_day_exercise, user_id=user["id"]
         )
     except DataError:
         db.rollback()
@@ -284,14 +295,14 @@ async def update_exercise(
 )
 async def delete_exercise(
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
     workout_day_exercise_model: Annotated[
         WorkoutDayExercise, Depends(verify_delete_workout_day_exercise)
     ],
 ):
     try:
         return await delete_workout_day_exercise(
-            db, workout_day_exercise_model, user_id=user.id
+            db, workout_day_exercise_model, user_id=user["id"]
         )
     except DataError:
         db.rollback()
@@ -315,37 +326,37 @@ async def get_one_day_exercise(
     )
 
 
-@router.get("/day", dependencies=[Depends(get_read_permission)])
-async def get_all_day(
-    db: Annotated[Session, Depends(get_db)],
-    pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
-    _include_exercises: Annotated[
-        bool,
-        Query(
-            description="Whether the days should include the exercises associated with that day"
-        ),
-    ] = False,
-):
-    return await get_all_workout_day(
-        db, WorkoutDayFilter(include_exercises=_include_exercises), pagination_options
-    )
+# @router.get("/day", dependencies=[Depends(get_read_permission)])
+# async def get_all_day(
+#     db: Annotated[Session, Depends(get_db)],
+#     pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
+#     _include_exercises: Annotated[
+#         bool,
+#         Query(
+#             description="Whether the days should include the exercises associated with that day"
+#         ),
+#     ] = False,
+# ):
+#     return await get_all_workout_day(
+#         db, WorkoutDayFilter(include_exercises=_include_exercises), pagination_options
+#     )
 
 
-@router.get("/day/{day_id}", dependencies=[Depends(get_read_permission)])
-async def get_one_day(
-    day_id: Annotated[int, Path(description="Id of the workout day")],
-    db: Annotated[Session, Depends(get_db)],
-    _include_exercises: Annotated[
-        bool,
-        Query(
-            description="Whether the days should include the exercises associated with that day"
-        ),
-    ] = False,
-):
-    workout = await get_workout_day(db, day_id, _include_exercises)
-    if not workout:
-        raise HTTPException(status_code=404, detail="Workout day not found")
-    return workout
+# @router.get("/day/{day_id}", dependencies=[Depends(get_read_permission)])
+# async def get_one_day(
+#     day_id: Annotated[int, Path(description="Id of the workout day")],
+#     db: Annotated[Session, Depends(get_db)],
+#     _include_exercises: Annotated[
+#         bool,
+#         Query(
+#             description="Whether the days should include the exercises associated with that day"
+#         ),
+#     ] = False,
+# ):
+#     workout = await get_workout_day(db, day_id, _include_exercises)
+#     if not workout:
+#         raise HTTPException(status_code=404, detail="Workout day not found")
+#     return workout
 
 
 @router.get("/{workout_id}/day", dependencies=[Depends(get_read_permission)])
@@ -374,18 +385,18 @@ async def get_day_by_workout_id(
 async def save_day(
     workout_day: WorkoutDayCreate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     try:
-        return await save_workout_day(db, workout_day, user_id=user.id)
+        return await save_workout_day(db, workout_day, user)
     except DataError:
         db.rollback()
         raise HTTPException(
             status_code=400, detail="Data error occurred, check your input"
         )
-    except:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Unknown exception occured")
+    # except:
+    #     db.rollback()
+    #     raise HTTPException(status_code=500, detail="Unknown exception occured")
 
 
 @router.put("/day/{day_id}", dependencies=[Depends(get_write_permission)])
@@ -393,12 +404,12 @@ async def update_day(
     day_id: int,
     workout_day: WorkoutDayUpdate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
     workout_day_model: Annotated[WorkoutDay, Depends(verify_update_workout_day)],
 ):
     try:
         return await update_workout_day(
-            db, workout_day_model, workout_day, user_id=user.id
+            db, workout_day_model, workout_day, user_id=user["id"]
         )
     except DataError:
         db.rollback()
@@ -414,11 +425,11 @@ async def update_day(
 async def delete_day(
     day_id: int,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
     workout_day_model: Annotated[WorkoutDay, Depends(verify_delete_workout_day)],
 ):
     try:
-        return await delete_workout_day(db, day_id, workout_day_model, user_id=user.id)
+        return await delete_workout_day(db, day_id, workout_day_model, user_id=user["id"])
     except DataError:
         db.rollback()
         raise HTTPException(
@@ -429,19 +440,21 @@ async def delete_day(
         raise e
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(get_read_permission)])
 async def get_all(
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[WorkoutFilter, Depends(get_filters)],
     pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
+    user: Annotated[dict, Depends(get_user)]
 ):
-    return await get_all_workout(db, filters, pagination_options)
+    return await get_all_workout(db, user["org_id"], filters, pagination_options, user)
 
 
 @router.get("/{workout_id}", dependencies=[Depends(get_read_permission)])
 async def get_one(
     workout_id: Annotated[int, Path(description="Id of the workout")],
     db: Annotated[Session, Depends(get_db)],
+    user: Annotated[dict, Depends(get_user)],
     _include_days: Annotated[
         bool, Query(description="To include that workout's days")
     ] = False,
@@ -449,8 +462,8 @@ async def get_one(
         bool, Query(description="To include that workout's days and exercises")
     ] = False,
 ):
-    workout = await get_workout(
-        db, workout_id, _include_days, _include_days_and_exercises
+    workout = await get_workout_filter(
+        db, user, workout_id, _include_days, _include_days_and_exercises
     )
     if not workout:
         raise HTTPException(status_code=404, detail="Workout not found")
@@ -464,7 +477,7 @@ async def save(
     user: Annotated[dict, Depends(get_user)],
 ):
     try:
-        return await save_workout(db, workout, user_id=user["id"])
+        return await save_workout(db, user, workout)
     except DataError:
         db.rollback()
         raise HTTPException(
@@ -472,7 +485,7 @@ async def save(
         )
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Unknown exception occured")
+        raise HTTPException(status_code=500, detail=f"Unknown exception occured: {str(e)}")
 
 
 @router.put("/{workout_id}", dependencies=[Depends(get_write_permission)])
@@ -480,10 +493,10 @@ async def update(
     workout_model: Annotated[Workout, Depends(verify_workout)],
     workout: WorkoutUpdate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     try:
-        return await update_workout(db, workout_model, workout, user_id=user.id)
+        return await update_workout(db, workout_model, workout, user)
     except DataError:
         db.rollback()
         raise HTTPException(
@@ -496,13 +509,12 @@ async def update(
 
 @router.delete("/{workout_id}", dependencies=[Depends(get_delete_permission)])
 async def delete(
-    workout_id: int,
     workout_model: Annotated[Workout, Depends(verify_workout)],
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[_client_schema.ClientRead, Depends(get_user)],
+    user: Annotated[dict, Depends(get_user)],
 ):
     try:
-        return await delete_workout(db, workout_id, workout_model, user_id=user.id)
+        return await delete_workout(db, workout_model, user_id=user["id"])
     except DataError:
         db.rollback()
         raise HTTPException(

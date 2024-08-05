@@ -3,7 +3,7 @@ from typing import Annotated, List
 from typing_extensions import Optional
 from pydantic import AfterValidator, BaseModel, Field, validator
 
-from .models import ExerciseIntensity, ExerciseType, WorkoutGoal, WorkoutLevel
+from .models import ExerciseIntensity, ExerciseType, VisibleFor, WorkoutGoal, WorkoutLevel
 
 
 class MyBaseModel(BaseModel):
@@ -49,6 +49,7 @@ class WorkoutDayRead(WorkoutDayBase):
 class WorkoutBase(MyBaseModel):
     workout_name: str
     description: Optional[str] = None
+    visible_for: VisibleFor
     goals: WorkoutGoal
     level: WorkoutLevel
     notes: Optional[str] = None
@@ -70,6 +71,7 @@ class WorkoutUpdate(MyBaseModel):
     description: Optional[str] = None
     goals: Optional[WorkoutGoal] = None
     level: Optional[WorkoutLevel] = None
+    visible_for: Optional[VisibleFor] = None
     notes: Optional[str] = None
     weeks: Optional[int] = None
 
@@ -80,6 +82,7 @@ class WorkoutFilter(MyBaseModel):
     search: Optional[str] = None
     include_days: Optional[bool] = False
     include_days_and_exercises: Optional[bool] = False
+    created_by_user: Optional[bool] = None
 
 class WorkoutDayCreate(WorkoutDayBase):
     pass
