@@ -124,6 +124,11 @@ class GetStaffResponse(StaffBase):
     activated_on: Optional[datetime.date] = None
     last_online: Optional[datetime.datetime] = None
     last_checkin: Optional[datetime.datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
     
 class StaffDetail(pydantic.BaseModel):
     id: int
