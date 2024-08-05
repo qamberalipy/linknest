@@ -269,9 +269,7 @@ def get_filtered_staff(
     elif params.sort_key is not None:
             raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
         
-
     staff = query.all()
-
     return staff
     
 

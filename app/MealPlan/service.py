@@ -95,11 +95,10 @@ def get_meal_plans_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Mea
         _models.MealPlan.org_id == org_id,
         _models.MealPlan.is_deleted == False
     )
-
+    
     if params.sort_key in extract_columns(query):       
             sort_order = desc(params.sort_key) if params.sort_order == "desc" else asc(params.sort_key)
             query=query.order_by(sort_order)
-
     if params.search_key:
         search_pattern = f"%{params.search_key}%"
         query = query.filter(or_(
