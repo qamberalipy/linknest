@@ -418,6 +418,7 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
     CoachOrg = aliased(_models.CoachOrganization)
     BankDetail = aliased(_usermodels.Bank_detail)
     ClientCoach = aliased(_client_models.ClientCoach)
+    Client = aliased(_client_models.Client)
 
     query = db.query(
         *_models.Coach.__table__.columns,
@@ -427,15 +428,18 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
         BankDetail.swift_code,
-        func.array_agg(func.coalesce(ClientCoach.client_id, 0)).label('member_ids')
+        func.array_agg(func.coalesce(ClientCoach.client_id, 0)).label('members')
     ).join(
         CoachOrg, _models.Coach.id == CoachOrg.coach_id
     ).join(
         BankDetail, _models.Coach.bank_detail_id == BankDetail.id
     ).join(
         ClientCoach, ClientCoach.coach_id == _models.Coach.id
+    ).join(
+        Client, Client.id == ClientCoach.client_id
     ).filter(
         _models.Coach.is_deleted == False,
+        Client.is_deleted == False,
         CoachOrg.org_id == org_id
     ).order_by(sort_order).group_by(
         _models.Coach.id,
