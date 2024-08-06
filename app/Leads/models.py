@@ -7,7 +7,6 @@ import sqlalchemy.ext.declarative as _declarative
 from enum import Enum as PyEnum
 
 
-
 class Status(PyEnum):
     new='new'
     contacted='contacted'
@@ -21,7 +20,6 @@ class Status(PyEnum):
     closed_lost_contact='closed lost contact'
     closed_disqualified='closed disqualified'
     closed_third_party_aggregators='closed third-party aggregators'
-
 
 class Leads(_database.Base):
     __tablename__ = "leads"

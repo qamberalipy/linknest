@@ -251,7 +251,7 @@ def get_list_clients(
     org_id: int, db: _orm.Session = _fastapi.Depends(get_db)
 ) -> List[models.Client]:
     return (
-        db.query(_models.Client.id, _models.Client.first_name, _models.Client.last_name)
+        db.query(_models.Client.id,func.concat(_models.Client.first_name,' ',_models.Client.last_name).label('name'))
         .join(
             _models.ClientOrganization,
             _models.Client.id == _models.ClientOrganization.client_id,

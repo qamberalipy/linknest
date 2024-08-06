@@ -195,6 +195,10 @@ async def create_coach(coach: _schemas.CoachCreate, db: _orm.Session):
     return db_coach
 
 
+def get_coach_list(org_id:int,db: _orm.Session = _fastapi.Depends(get_db)):
+    query=db.query(_models.Coach.id,func.concat(_models.Coach.first_name,' ',_models.Coach.last_name).label('name')).join(_models.CoachOrganization,_models.Coach.id == _models.CoachOrganization.coach_id).filter(_models.CoachOrganization.org_id == org_id)
+    return query
+
 def update_bank_detail(coach: _schemas.CoachUpdate, db: _orm.Session, db_coach):
     db_bank_detail = db.query(_usermodels.Bank_detail).filter(
         _usermodels.Bank_detail.id == db_coach.bank_detail_id

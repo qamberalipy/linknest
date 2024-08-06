@@ -4,6 +4,11 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import JSON
 
+
+class CoachList(pydantic.BaseModel):
+    id:Optional[int]
+    name:Optional[str]
+
 class CoachBase(pydantic.BaseModel):
     wallet_address: Optional[str] = None 
     org_id: Optional[int] = None
