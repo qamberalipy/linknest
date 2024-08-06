@@ -1,8 +1,8 @@
 from datetime import date
-import datetime
-from typing import Optional
+
+from typing import Annotated,Any, List
 import jwt
-from sqlalchemy import desc, func, or_
+from sqlalchemy import String, asc, cast, desc, func, literal_column, or_
 import sqlalchemy.orm as _orm
 from sqlalchemy.sql import and_  
 import email_validator as _email_check
@@ -11,12 +11,16 @@ import fastapi.security as _security
 import app.core.db.session as _database
 import app.Food.schema as _schemas
 import app.Food.models as _models
+import app.user.models as _usermodels
+import app.Shared.helpers as _helpers
 import random
 import json
 import pika
 import time
 import os
 import bcrypt as _bcrypt
+from . import models, schema
+from sqlalchemy.orm import aliased
 
 
 async def create_food(food: _schemas.FoodCreate, db: _orm.Session):
@@ -57,3 +61,14 @@ async def delete_food(food_id: int, db: _orm.Session):
     db.delete(db_food)
     db.commit()
     return db_food
+
+async def get_food_by_org_id(org_id: int, db: _orm.Session, params: _schemas.FoodFilterParams):
+    sort_order = desc(_models.Food.created_at) if params.sort_order == "desc" else asc(_models.Food.created_at)
+
+    query = db.query(_models.Food).filter(_models.Food.org_id == org_id).order_by(sort_order)
+
+    if params.search_key:
+        query = query.filter(
+            or_(_models.Food.name.ilike(f"%{params.search_key}%"))
+        )
+    
