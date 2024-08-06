@@ -62,6 +62,7 @@ class Workout(_database.Base, HouseKeeping):
     notes: Mapped[str] = mapped_column(String, nullable=True)
     weeks: Mapped[int] = mapped_column(Integer, nullable=False)
     img_url: Mapped[str] = mapped_column(String, nullable=True)
+    assign_to: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
 
     days = relationship(
         "WorkoutDay",
@@ -75,7 +76,7 @@ class WorkoutDay(_database.Base, HouseKeeping):
     __tablename__ = "workout_day"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    workout_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    workout_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     day_name: Mapped[str] = mapped_column(String, nullable=False)
     week: Mapped[int] = mapped_column(Integer, nullable=False)
     day: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -98,8 +99,8 @@ class WorkoutDayExercise(_database.Base, HouseKeeping):
     __tablename__ = "workout_day_exercise"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    workout_day_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    exercise_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    workout_day_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    exercise_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     exercise_type: Mapped[ExerciseType] = mapped_column(Enum(ExerciseType), nullable=False)
     sets: Mapped[int] = mapped_column(Integer, nullable=False)
     seconds_per_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
@@ -109,7 +110,6 @@ class WorkoutDayExercise(_database.Base, HouseKeeping):
     percentage_of_1rm: Mapped[float] = mapped_column(Float, nullable=True)
     distance: Mapped[float] = mapped_column(Float, nullable=True)
     speed: Mapped[float] = mapped_column(Float, nullable=True)
-    met_id: Mapped[int] = mapped_column(Integer, nullable=True)  
     met_value: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[str] = mapped_column(String, nullable=True)
 

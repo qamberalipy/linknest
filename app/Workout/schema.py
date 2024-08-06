@@ -29,9 +29,15 @@ class WorkoutDayExerciseBase(MyBaseModel):
     intensity_type: ExerciseIntensity
     percentage_of_1rm: Optional[float] = None
     notes: Optional[str] = None
+    distance: Optional[float] = None
+    speed: Optional[float] = None
+    met_value: Optional[float] = None
 
 class WorkoutDayExerciseRead(WorkoutDayExerciseBase):
     id: int
+    exercise_name: Optional[str] = None
+    video_url_male: Optional[str] = None
+    gif_url: Optional[str] = None
     exercise: Optional[ExerciseBase] = None
     created_at: datetime
     updated_at: Optional[datetime]
@@ -89,6 +95,7 @@ class WorkoutFilter(MyBaseModel):
     sort_column: Optional[Literal[*tuple(columns)]] = None
     sort_dir: Optional[Literal["asc", "desc"]] = "asc"
     results_per_goal: Optional[int] = 3
+    equipment_id: Optional[int] = None
 
 class WorkoutDayCreate(WorkoutDayBase):
     pass

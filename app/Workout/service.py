@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from starlette.types import HTTPExceptionHandler
 
 from app.Shared.dependencies import get_user
-from app.Exercise.models import Exercise
+from app.Exercise.models import Exercise, ExerciseEquipment
 from app.Workout import workout
 from .models import Workout, WorkoutDay, WorkoutDayExercise
 from ..Shared.schema import PaginationOptions
@@ -221,11 +221,13 @@ def _workout_get_count_before_pagination(
         query = query.options(joinedload(Workout.days).joinedload(WorkoutDay.exercises))
     return query.scalar()
 
+
 def _extract_columns(query):
     columns = []
-    if hasattr(query.statement, 'columns'):
+    if hasattr(query.statement, "columns"):
         columns = [col.name for col in query.statement.columns]
     return columns
+
 
 def _workout_get_count_before_pagination(
     db: Session, user: dict, params: WorkoutFilter
@@ -319,6 +321,16 @@ async def get_all_workout_table_view(
     if params.include_days_and_exercises:
         query = query.options(joinedload(Workout.days).joinedload(WorkoutDay.exercises))
         exclude_by_default = {}
+    if params.equipment_id:
+        query = (
+            query.join(WorkoutDay, WorkoutDay.workout_id == Workout.id)
+            .join(
+                WorkoutDayExercise, WorkoutDayExercise.workout_day_id == WorkoutDay.id
+            )
+            .join(Exercise, Exercise.id == WorkoutDay.exercise_id)
+            .join(ExerciseEquipment, ExerciseEquipment.exercise_id == Exercise.id)
+            .filter(ExerciseEquipment.equipment_id == params.equipment_id)
+        )
     if pagination_options.offset:
         query = query.offset(pagination_options.offset)
     if pagination_options.limit:
@@ -371,37 +383,37 @@ async def get_all_workout_mobile_view(
         .over(partition_by=getattr(Workout, GROUP_COLUMN), order_by=Workout.id)
         .label("row_num"),
     ).filter(Workout.is_deleted == False, Workout.org_id == org_id)
-    #if user_type == "member" or user_type == "coach":
-    #    query = query.filter(
-    #        or_(
-    #            Workout.visible_for == "everyone_in_my_club",
-    #            Workout.visible_for == "members_of_my_club",
-    #            and_(
-    #                Workout.visible_for == "only_myself",
-    #                (Workout.created_by == id)
-    #                & (Workout.create_user_type == user_type),
-    #            ).self_group(),
-    #        ).self_group()
-    #    )
-    # if params.goals:
-    #     query = query.filter(Workout.goals == params.goals)
-    # if params.level:
-    #     query = query.filter(Workout.level == params.level)
-    # if params.search:
-    #     query = query.filter(Workout.workout_name.ilike(f"%{params.search}%"))
-    # if params.include_days:
-    #     query = query.options(joinedload(Workout.days))
-    #     exclude_by_default.remove("days")
-    # if params.include_days_and_exercises:
-    #     query = query.options(joinedload(Workout.days))
-    #     exclude_by_default = {"days": {"__all__": {"exercises"}}}
-    # if params.created_by_user:
-    #     query = query.filter(
-    #         Workout.create_user_type == user_type, Workout.created_by == id
-    #     )
-    # if params.include_days_and_exercises:
-    #     query = query.options(joinedload(Workout.days).joinedload(WorkoutDay.exercises))
-    #     exclude_by_default = {}
+    if user_type == "member" or user_type == "coach":
+       query = query.filter(
+           or_(
+               Workout.visible_for == "everyone_in_my_club",
+               Workout.visible_for == "members_of_my_club",
+               and_(
+                   Workout.visible_for == "only_myself",
+                   (Workout.created_by == id)
+                   & (Workout.create_user_type == user_type),
+               ).self_group(),
+           ).self_group()
+       )
+    if params.goals:
+        query = query.filter(Workout.goals == params.goals)
+    if params.level:
+        query = query.filter(Workout.level == params.level)
+    if params.search:
+        query = query.filter(Workout.workout_name.ilike(f"%{params.search}%"))
+    if params.include_days:
+        query = query.options(joinedload(Workout.days))
+        exclude_by_default.remove("days")
+    if params.include_days_and_exercises:
+        query = query.options(joinedload(Workout.days))
+        exclude_by_default = {"days": {"__all__": {"exercises"}}}
+    if params.created_by_user:
+        query = query.filter(
+            Workout.create_user_type == user_type, Workout.created_by == id
+        )
+    if params.include_days_and_exercises:
+        query = query.options(joinedload(Workout.days).joinedload(WorkoutDay.exercises))
+        exclude_by_default = {}
     query = query.subquery()
     query_final = db.query(query).filter(query.c.row_num <= 3)
     items = [
@@ -506,7 +518,16 @@ async def save_workout_day_exercise(
 async def get_all_workout_day_exercise(
     db: Session, params: WorkoutDayExerciseFilter, pagination_options: PaginationOptions
 ) -> List[WorkoutDayExerciseRead]:
-    query = db.query(WorkoutDayExercise).filter(WorkoutDayExercise.is_deleted == False)
+    query = (
+        db.query(
+            *WorkoutDayExercise.__table__.columns,
+            Exercise.exercise_name,
+            Exercise.video_url_male,
+            Exercise.gif_url,
+        )
+        .filter(WorkoutDayExercise.is_deleted == False)
+        .outerjoin(Exercise, Exercise.id == WorkoutDayExercise.exercise_id)
+    )
     if params.workout_day_id:
         query = query.filter(WorkoutDayExercise.workout_day_id == params.workout_day_id)
     if pagination_options.offset:

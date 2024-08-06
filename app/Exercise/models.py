@@ -69,7 +69,7 @@ class ExerciseEquipment(_database.Base):
     __tablename__ = 'exercise_equipment'
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    exercise_id=_sql.Column(_sql.Integer)
+    exercise_id=_sql.Column(_sql.Integer, index=True)
     equipment_id=_sql.Column(_sql.Integer)
     created_by=_sql.Column(_sql.Integer)
     updated_by=_sql.Column(_sql.Integer)
