@@ -97,6 +97,7 @@ class Organization(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     name = _sql.Column(_sql.String)
     email = _sql.Column(_sql.String)
+    profile_img = _sql.Column(_sql.String(150))  # varchar(150) in the image is likely a typo
     business_type = _sql.Column(_sql.Enum(BusinessTypeEnum, name="businesstypeenum"))
     description = _sql.Column(_sql.String)
     address = _sql.Column(_sql.String(100)) 

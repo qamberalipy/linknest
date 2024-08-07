@@ -47,8 +47,8 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    organization_details = _schemas.OrganizationCreate(org_name=user.org_name)
-    organization = await _services.create_organization(organization_details, db)
+    organization_details = _schemas.OrganizationCreateTest(name=user.org_name)
+    organization = await _services.create_organizationtest(organization_details, db)
 
     user_data = user.dict()
     user_data['org_id'] = organization.id

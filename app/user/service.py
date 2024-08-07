@@ -70,6 +70,34 @@ async def get_user_by_email(email: str, db: _orm.Session):
     print("Email: ", email)
     return db.query(_models.User).filter(_models.User.email == email).first()
 
+async def create_organization(org: _schemas.OrganizationCreate, db: _orm.Session) -> models.Organization:
+    db_org = models.Organization(**org.dict())
+    db.add(db_org)
+    db.commit()
+    db.refresh(db_org)
+    return db_org
+
+async def get_organization(org_id: int, db: _orm.Session) -> models.Organization:
+    return db.query(models.Organization).filter(models.Organization.id == org_id, models.Organization.is_deleted == False).first()
+
+async def update_organization(org_id: int, org: _schemas.OrganizationUpdate, db: _orm.Session) -> models.Organization:
+    db_org = db.query(models.Organization).filter(models.Organization.id == org_id, models.Organization.is_deleted == False).first()
+    if not db_org:
+        return None
+    for key, value in org.dict(exclude_unset=True).items():
+        setattr(db_org, key, value)
+    db.commit()
+    db.refresh(db_org)
+    return db_org
+
+async def delete_organization(org_id: int, db: _orm.Session):
+    db_org = db.query(models.Organization).filter(models.Organization.id == org_id, models.Organization.is_deleted == False).first()
+    if not db_org:
+        return None
+    db_org.is_deleted = True
+    db.commit()
+    return db_org
+
 async def create_user(user: _schemas.UserRegister, db: _orm.Session):
     try:
         valid = _email_check.validate_email(user.email)
@@ -89,8 +117,8 @@ async def create_user(user: _schemas.UserRegister, db: _orm.Session):
     db.refresh(user_obj)
     return user_obj
 
-async def create_organization(organization: _schemas.OrganizationCreate, db: _orm.Session = _fastapi.Depends(get_db)):
-    org = _models.Organization(org_name=organization.org_name)
+async def create_organizationtest(organization: _schemas.OrganizationCreateTest, db: _orm.Session = _fastapi.Depends(get_db)):
+    org = _models.Organization(name=organization.name)
     db.add(org)
     db.commit()
     db.refresh(org)
@@ -127,7 +155,7 @@ async def get_user_by_email(email: str, db: _orm.Session = _fastapi.Depends(get_
 async def get_alluser_data(email: str, db: _orm.Session = _fastapi.Depends(get_db)):
     # Retrieve a user by email from the database
     result = (
-        db.query(_models.User, _models.Organization.org_name)
+        db.query(_models.User, _models.Organization.name)
         .join(_models.Organization, _models.User.org_id == _models.Organization.id)
         .filter(_models.User.email == email)
         .first()
