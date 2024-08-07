@@ -12,7 +12,7 @@ import app.core.db.session as _database
 import pika
 import logging
 import datetime
-from app.Client.models import Status
+from app.Client.models import ClientStatus
 
 router = APIRouter()
 
@@ -134,7 +134,7 @@ def get_filters(
 
     search_key: Annotated[str | None, Query(title="Search Key")] = None,
     member_name: Annotated[str, Query(description="Member First/Last Name")] = None,
-    status: Annotated[Status | None, Query(title="status")] = None,
+    status: Annotated[ClientStatus | None, Query(title="status")] = None,
     coach_assigned: Annotated[int, Query(description="Coach ID")] = None,
     membership_plan: Annotated[int, Query(description="Membership ID")] = None,
     sort_order: Annotated[str,Query(title="Sorting Order")] = 'desc',

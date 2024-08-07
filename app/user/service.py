@@ -21,7 +21,7 @@ from . import models, schema
 import logging
 from app.Exercise.service import extract_columns
 from collections import defaultdict
-from app.user.models import Status
+from app.user.models import StaffStatus
 
 # Load environment variables
 
@@ -556,7 +556,7 @@ def get_filters(
     staff_name: Annotated[str , _fastapi.Query(title="Staff Name")] = None,
     role_name: Annotated[str,_fastapi.Query(title="Role Name")]=None,
     sort_key: Annotated[str,_fastapi.Query(title="Sort Key")]=None,
-    status: Annotated[Status,_fastapi.Query(title="Status")]=None,
+    status: Annotated[StaffStatus,_fastapi.Query(title="Status")]=None,
     sort_order: Annotated[str,_fastapi.Query(title="Sort Order")]=None,
     limit: Annotated[int, _fastapi.Query(description="Pagination Limit")] = None,
     offset: Annotated[int, _fastapi.Query(description="Pagination offset")] = None):

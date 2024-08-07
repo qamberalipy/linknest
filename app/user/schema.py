@@ -2,7 +2,7 @@ import pydantic
 import datetime
 from datetime import date
 from typing import Optional, List, Any
-from app.user.models import Status
+from app.user.models import StaffStatus,RoleStatus
 
 class UserBase(pydantic.BaseModel):
     first_name: str
@@ -102,7 +102,7 @@ class StaffBase(pydantic.BaseModel):
     zipcode: Optional[str] = None
     address_1: Optional[str] = None
     address_2: Optional[str] = None
-    status:Status
+    status:StaffStatus
     send_invitation: Optional[bool]=False
     
     class Config:
@@ -168,7 +168,7 @@ class UpdateStaff(pydantic.BaseModel):
     zipcode: Optional[str] = None
     address_1: Optional[str] = None
     address_2: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[StaffStatus] = None
     activated_on: Optional[datetime.date] = None
     last_online: Optional[datetime.datetime] = None
     updated_by: Optional[int] = None
@@ -182,7 +182,7 @@ class StaffFilterParams(pydantic.BaseModel):
     staff_name: Optional[str] = None
     role_name: Optional[str] = None
     sort_key:Optional[str]=None
-    status:Optional[Status]=None
+    status:Optional[StaffStatus]=None
     sort_order: Optional[str] = "asc"
     limit: Optional[int] = 10
     offset: Optional[int] = 0
@@ -204,7 +204,7 @@ class StaffFilterRead(pydantic.BaseModel):
 class RoleBase(pydantic.BaseModel):
     name: str
     org_id: Optional[int] = None
-    status: Optional[bool] = None
+    status: Optional[RoleStatus] = "active"
     is_deleted: Optional[bool] = False
 
     class Config:
