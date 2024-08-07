@@ -10,7 +10,7 @@ import pika
 import logging
 import datetime
 import app.Shared.helpers as _helpers
-from app.Membership.models import Status
+from app.Membership.models import MembershipStatus
 
 router = APIRouter()
 
@@ -66,7 +66,7 @@ def get_membership_filters(
     discount_percentage: Annotated[int, Query(description="Coach ID")] = None,
     tax_rate: Annotated[int, Query(description="Coach ID")] = None,
     total_amount: Annotated[int, Query(description="Membership ID")] = None,
-    status: Annotated[Status | None, Query(title="status")] = None,
+    status: Annotated[MembershipStatus | None, Query(title="status")] = None,
     sort_order: Annotated[str,Query(title="Sorting Order")] = 'desc',
     limit: Annotated[int, Query(description="Pagination Limit")] = None,
     offset: Annotated[int, Query(description="Pagination offset")] = None
@@ -134,7 +134,7 @@ def get_filters(
 
     search_key: Annotated[str | None, Query(title="Search Key")] = None,
     sort_order: Annotated[str,Query(title="Sorting Order")] = 'desc',
-    status : Annotated[Status | None, Query(title="Status")] = None,
+    status : Annotated[MembershipStatus | None, Query(title="Status")] = None,
     limit: Annotated[int, Query(description="Pagination Limit")] = None,
     offset: Annotated[int, Query(description="Pagination offset")] = None
 ):
@@ -183,9 +183,9 @@ def create_income_category(income_category: _schemas.IncomeCategoryCreate, db: _
     except DataError as e:
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
-def get_filters(
+def get_income_category_filters(
     search_key: Annotated[str | None, Query(title="Search Key")] = None,
-    status: Annotated[Status | None, Query(title="Status")] = None,
+    status: Annotated[MembershipStatus | None, Query(title="Status")] = None,
     sort_key: Annotated[str | None, Query(title="Sort Key")] = None,
     sort_order: Annotated[str,Query(title="Sorting Order")] = 'desc',
     limit: Annotated[int, Query(description="Pagination Limit")] = None,
@@ -201,10 +201,8 @@ def get_filters(
     )
     
 @router.get("/income_category", response_model=List[_schemas.IncomeCategoryRead], tags=["Income Category APIs"])
-def get_all_income_categories(  
-    org_id: int, filters: Annotated[_schemas.IncomeCategoryFilterParams, 
-    Depends(get_filters)], 
-    request: Request, db: _orm.Session = Depends(get_db)):
+def get_all_income_categories(org_id: int, filters: Annotated[_schemas.IncomeCategoryFilterParams, Depends(get_income_category_filters)],db: _orm.Session = Depends(get_db)):
+    
     try:    
         income_categories = _services.get_all_income_categories_by_org_id(org_id, filters, db)
         return income_categories

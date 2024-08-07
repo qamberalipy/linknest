@@ -12,6 +12,11 @@ class StaffStatus(str,PyEnum):
     inactive='inactive'
     pending='pending'    
     
+class RoleStatus(str,PyEnum):
+    active='active'
+    inactive='inactive'
+         
+   
 class User(_database.Base):
     __tablename__ = "staff"
 
@@ -142,7 +147,7 @@ class Role(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     name = _sql.Column(_sql.String(50))
     org_id = _sql.Column(_sql.Integer)
-    status = _sql.Column(_sql.Boolean)
+    status = _sql.Column(_sql.Enum(RoleStatus))
     is_deleted = _sql.Column(_sql.Boolean)
     
     # permissions = _orm.relationship(
@@ -216,7 +221,6 @@ class Permission(_database.Base):
     #     primaryjoin="Resource.id==foreign(Permission.resource_id)",
     #     back_populates="permissions"
     # )
-
 
     
 class Bank_detail(_database.Base):
