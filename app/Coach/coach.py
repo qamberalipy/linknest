@@ -30,14 +30,14 @@ def get_db():
 async def create_coach(coach: _schemas.CoachCreate, db: _orm.Session = Depends(get_db)):
     return await _services.create_coach(coach,db)
 
-@router.put("/coach", response_model=_schemas.CoachUpdate , tags=["Coach API"])
+@router.put("/coach", tags=["Coach API"])
 async def update_coach(coach: _schemas.CoachUpdate, db: _orm.Session = Depends(get_db)):
     db_coach = await _services.update_coach(coach.id,coach,"web",db)
     if db_coach is None:
         raise HTTPException(status_code=404, detail="Coach not found")
     return db_coach
 
-@router.delete("/coach/{id}", response_model=_schemas.CoachRead, tags=["Coach API"])
+@router.delete("/coach/{id}", tags=["Coach API"])
 def delete_coach(id:int, db: _orm.Session = Depends(get_db)):
     db_coach = _services.delete_coach(id,db)
     if db_coach is None:
