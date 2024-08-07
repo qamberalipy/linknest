@@ -62,7 +62,6 @@ class Workout(_database.Base, HouseKeeping):
     notes: Mapped[str] = mapped_column(String, nullable=True)
     weeks: Mapped[int] = mapped_column(Integer, nullable=True)
     img_url: Mapped[str] = mapped_column(String, nullable=True)
-    assign_to: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
 
     days = relationship(
         "WorkoutDay",
@@ -76,10 +75,10 @@ class WorkoutDay(_database.Base, HouseKeeping):
     __tablename__ = "workout_day"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    workout_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    day_name: Mapped[str] = mapped_column(String, nullable=True)
-    week: Mapped[int] = mapped_column(Integer, nullable=True)
-    day: Mapped[int] = mapped_column(Integer, nullable=True)
+    workout_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    day_name: Mapped[str] = mapped_column(String, nullable=False)
+    week: Mapped[int] = mapped_column(Integer, nullable=False)
+    day: Mapped[int] = mapped_column(Integer, nullable=False)
 
     workout = relationship(
         "Workout",
