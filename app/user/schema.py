@@ -3,6 +3,7 @@ import datetime
 from datetime import date
 from typing import Optional, List, Any
 from app.user.models import StaffStatus,RoleStatus
+from enum import Enum as PyEnum
 
 class UserBase(pydantic.BaseModel):
     first_name: str
@@ -48,8 +49,71 @@ class BankAccountCreate(pydantic.BaseModel):
     bank_account_holder_name: str
     bank_name: str
     
-class OrganizationCreate(pydantic.BaseModel):
-    org_name: str
+class OrganizationCreateTest(pydantic.BaseModel):
+    name: str
+
+class BusinessTypeEnum(str, PyEnum):
+    bootcamp = "Bootcamp"
+    community_services = "Community Services"
+    corporate_health = "Corporate Health"
+    crossfit_box = "CrossFit Box"
+    dance_studio = "Dance Studio"
+    dietitian = "Dietitian"
+    educational_institute = "Educational Institute"
+    fitness_center = "Fitness Center"
+    hospital_clinic = "Hospital or Clinic"
+    lifestyle_coach = "Lifestyle Coach"
+    martial_arts_center = "Martial Arts Center"
+    online_coach = "Online Coach"
+    personal_trainer = "Personal Trainer"
+    personal_training_studio = "Personal Training Studio"
+    physiotherapy_clinic = "Physiotherapy Clinic"
+    yoga_pilates_studio = "Yoga or Pilates Studio"
+    other = "Other" 
+
+class OrganizationBase(pydantic.BaseModel):
+    name: str
+    email: Optional[str]=None
+    profile_img:Optional[str] = None
+    business_type: Optional[BusinessTypeEnum]=None
+    description: Optional[str] = None
+    address: Optional[str] = None
+    zipcode: Optional[str] = None
+    country_id: Optional[int] = None
+    city: Optional[str] = None
+    facebook_page_url: Optional[str] = None
+    website_url: Optional[str] = None
+    timezone: Optional[str] = None
+    language: Optional[str] = None
+    company_reg_no: Optional[str] = None
+    vat_reg_no: Optional[str] = None
+    club_key: Optional[str] = None
+    api_key: Optional[str] = None
+    hide_for_nonmember: Optional[bool] = None
+    # opening_hours: Optional[dict] = None
+    # opening_hours_notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class OrganizationCreate(OrganizationBase):
+    pass
+
+class OrganizationUpdate(OrganizationBase):
+    id:int
+    
+    class Config:
+        from_attributes = True
+
+class OrganizationRead(OrganizationBase):
+    id: int
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+
 
 class getStaff(pydantic.BaseModel):
     
