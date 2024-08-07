@@ -1,6 +1,6 @@
 import datetime as _dt
 from datetime import date
-import sqlalchemy as _sql
+from enum import Enum  as pyEnum
 import sqlalchemy.orm as _orm
 import app.core.db.session as _database
 import bcrypt as _bcrypt
