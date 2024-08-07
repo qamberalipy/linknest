@@ -41,10 +41,10 @@ class UserType(PyEnum):
     coach = 'Coach'
 
 class HouseKeeping():
-    create_user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=True)
-    update_user_type: Mapped[UserType] = mapped_column(Enum(UserType))
+    create_user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=False)
+    update_user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=True)
     created_by: Mapped[int] = mapped_column(Integer)
-    updated_by: Mapped[int] = mapped_column(Integer)
+    updated_by: Mapped[int] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
