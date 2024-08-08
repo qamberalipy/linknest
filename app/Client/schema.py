@@ -95,6 +95,14 @@ class RegisterClientApp(pydantic.BaseModel):
     is_deleted:Optional[bool]=False
     
         
+class ClientOrganizationResponse(pydantic.BaseModel):
+    id: int
+    name: Optional[str] = None
+    profile_img: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        
 class RegisterClient(ClientBase):
     pass
 

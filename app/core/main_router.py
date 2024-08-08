@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DataError, IntegrityError
-from app.Client.schema import ClientCreateApp, ClientLogin, ClientLoginResponse, CreateClientCoach, CreateClientMembership, CreateClientOrganization, RegisterClientApp
-from app.Coach.schema import CoachAppBase, CoachLogin, CoachLoginResponse, CoachRead,CoachLoginResponse
+from app.Client.schema import ClientCreateApp, ClientLogin, ClientLoginResponse, CreateClientCoach, CreateClientMembership, CreateClientOrganization, RegisterClientApp,ClientOrganizationResponse
+from app.Coach.schema import CoachAppBase, CoachLogin, CoachOrganizationResponse,CoachLoginResponse, CoachRead,CoachLoginResponse
 from app.Coach.service import create_appcoach
 import app.Client.service as _client_service 
 import app.Coach.service as _coach_service 
@@ -181,6 +181,21 @@ async def register_mobileclient(
         )
 
    
+@router.get("/app/member", response_model=list[ClientOrganizationResponse], tags=["App Router"])
+async def get_client_organization(email: str, db: _orm.Session = Depends(get_db)):
+    try:
+        organizations = await _client_service.get_client_organzation(email, db)
+        return organizations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    
+@router.get("/app/coach", response_model=list[CoachOrganizationResponse], tags=["App Router"])
+async def get_coach_organization(email: str, db: _orm.Session = Depends(get_db)):
+    try:
+        organizations = await _coach_service.get_coach_organzation(email, db)
+        return organizations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 @router.post("/app/member/login", response_model=ClientLoginResponse,  tags=["App Router"])
 async def login_client(client_data: ClientLogin, db: _orm.Session = Depends(get_db)):

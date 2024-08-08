@@ -15,6 +15,7 @@ import app.Client.schema as _schemas
 import app.Client.models as _models
 import app.Coach.models as _coach_models
 import app.Shared.helpers as _helpers
+import app.user.models as _user_models
 import random
 import json
 import pika
@@ -41,6 +42,24 @@ def get_db():
         yield db
     finally:
         db.close()
+
+async def get_client_organzation(email: str, db: _orm.Session) -> List[_schemas.ClientOrganizationResponse]:
+    db_client = db.query(
+        _user_models.Organization.id,
+        _user_models.Organization.name,
+        _user_models.Organization.profile_img
+    ).join(
+        _models.ClientOrganization,
+        _models.ClientOrganization.org_id == _user_models.Organization.id
+    ).join(
+        _models.Client,
+        _models.Client.id == _models.ClientOrganization.client_id
+    ).filter(
+        _models.Client.email == email
+    ).all()
+    
+    # organizations = [_schemas.ClientOrganizationResponse(id=org.id, name=org.name, profile_img=org.profile_img) for org in db_client]
+    return db_client
 
 
 def generate_own_member_id():
