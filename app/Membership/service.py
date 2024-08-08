@@ -131,9 +131,12 @@ def update_membership_plan(membership_plan_id: int, membership_plan: _schemas.Me
     return {"status":"201","detail":"Membership Plan updated successfully"}
 
 
-
 def delete_membership_plan( membership_plan_id: int,db: _orm.Session):
-    db_membership_plan = db.query(models.MembershipPlan).filter(models.MembershipPlan.id == membership_plan_id).first()
+    db_membership_plan = db.query(models.MembershipPlan).filter(and_(models.MembershipPlan.id == membership_plan_id,_models.MembershipPlan.is_deleted == False)).first()
+    
+    if not db_membership_plan:
+        raise _fastapi.HTTPException(status_code=404, detail="Membership Plan not found")
+    
     if db_membership_plan:
         db_membership_plan.is_deleted = True
         db.commit()
@@ -190,6 +193,7 @@ def get_membership_plans_by_org_id(
     org_id: int,
     params: _schemas.MembershipFilterParams
 ):
+  
     sort_order = desc(_models.MembershipPlan.created_at) if params.sort_order == "desc" else asc(_models.MembershipPlan.created_at)
    
     query = db.query(
@@ -276,7 +280,7 @@ def get_membership_plans_by_org_id(
     print(membership_plan)
     
     return {"data":membership_plan,"total_counts":total_counts,"filtered_counts": filtered_counts}
-   
+  
 
 def create_facility(facility: _schemas.FacilityCreate,db: _orm.Session):
     
@@ -284,11 +288,12 @@ def create_facility(facility: _schemas.FacilityCreate,db: _orm.Session):
     ).filter(_models.Facility.name == facility.name, _models.Facility.org_id == facility.org_id).first()
     
     if existing_facility:
-        raise HTTPException(status_code=400, detail="Facility with this name already exists.")
+        raise HTTPException(status_code=400, detail="Facility with this name already exists in organization")
     
     db_facility = _models.Facility(
         name=facility.name,
         org_id=facility.org_id,
+        status=facility.status,
         min_limit=facility.min_limit,
         created_by=facility.created_by
     )
@@ -322,10 +327,10 @@ def update_facility(facility_update: _schemas.FacilityUpdate, db: _orm.Session):
     return {"status":"201","detail":"Facility updated successfully"}
 
 
-def delete_facility( facility_id: int,db: _orm.Session):
-    db_facility = db.query(_models.Facility).filter(_models.Facility.id == facility_id).first()
+def delete_facility(facility_id: int,db: _orm.Session):
+    db_facility = db.query(_models.Facility).filter(and_(_models.Facility.id == facility_id,_models.Facility.is_deleted == False)).first()
     if not db_facility:
-        return None
+        raise _fastapi.HTTPException(status_code=404, detail="Facility not found")
     
     db_facility.is_deleted = True
     db.commit()
@@ -339,16 +344,24 @@ def get_facility_by_org_id(org_id : int , params : _schemas.FacilityFilterParams
         .order_by(sort_order)\
         .offset(params.offset)\
         .limit(params.limit)
+    
+    total_counts = db.query(func.count()).select_from(facilities_query.subquery()).scalar()    
+        
     if params.search_key:
         facilities_query = facilities_query.filter(or_(
             _models.Facility.name.ilike(params.search_key)
         ))
         
     if params.status:
-        facilities_query=facilities_query.filter(_models.Facility.status == params.status)   
-
+        facilities_query=facilities_query.filter(_models.Facility.status == params.status)  
     
-    return facilities_query.all()
+    filtered_counts = db.query(func.count()).select_from(facilities_query.subquery()).scalar()    
+    db_facilities= facilities_query.all()
+
+    facilities_data = [_schemas.FacilityRead.from_orm(facility) for facility in db_facilities]
+
+    return {"data":facilities_data,"total_counts":total_counts,"filtered_counts": filtered_counts}
+
 
 def get_facility_by_id(facility_id: int,db: _orm.Session):
     return db.query(_models.Facility).filter(_models.Facility.id == facility_id, _models.Facility.is_deleted == False).first()
@@ -369,6 +382,8 @@ def get_all_income_categories_by_org_id(org_id : int, params : _schemas.IncomeCa
     query = db.query(_models.Income_category)\
     .filter(_models.Income_category.org_id == org_id, _models.Income_category.is_deleted == False)
     
+    total_counts = db.query(func.count()).select_from(query.subquery()).scalar()
+    
     if params.search_key:
         query = query.filter(or_(_models.Income_category.name.ilike(f"%{params.search_key}%")))
 
@@ -380,11 +395,16 @@ def get_all_income_categories_by_org_id(org_id : int, params : _schemas.IncomeCa
         query=query.order_by(sort_order)
 
     elif params.sort_key is not None:
-        raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")    
+        raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")  
     
-    query=query.limit(params.limit).offset(params.offset)
+    filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()
          
-    return query.all()
+    query=query.limit(params.limit).offset(params.offset)
+    db_income_category=query.all()
+      
+    income_category = [_schemas.IncomeCategoryRead.from_orm(income) for income in db_income_category]
+    
+    return {"data":income_category,"total_counts":total_counts,"filtered_counts": filtered_counts}
 
 def get_income_category_by_id(income_category_id: int, db: _orm.Session):
     return db.query(_models.Income_category).filter(_models.Income_category.id == income_category_id, _models.Income_category.is_deleted == False).first()
@@ -412,9 +432,11 @@ def update_income_category(income_category: _schemas.IncomeCategoryUpdate, db: _
     return {"status":"201","detail":"Income Category updated successfully"}
 
 def delete_income_category(income_category_id: int, db: _orm.Session):
-    db_income_category = db.query(_models.Income_category).filter(_models.Income_category.id == income_category_id).first()
-    if db_income_category is None:
-        return None
+    db_income_category = db.query(_models.Income_category).filter(and_(_models.Income_category.id == income_category_id,_models.Income_category.is_deleted == False)).first()
+    
+    if not db_income_category:
+        raise _fastapi.HTTPException(status_code=404, detail="Income Category not found")
+    
     db_income_category.is_deleted = True
     db_income_category.updated_at = datetime.datetime.now()
     db.commit()
@@ -436,6 +458,8 @@ def get_all_sale_taxes_by_org_id(org_id,db: _orm.Session, params: _schemas.SaleT
     
     query = db.query(_models.Sale_tax)\
     .filter(_models.Sale_tax.org_id == org_id, _models.Sale_tax.is_deleted == False)\
+     
+    total_counts = db.query(func.count()).select_from(query.subquery()).scalar()    
         
     if params.search_key:
         query = query.filter(or_(_models.Sale_tax.name.ilike(f"%{params.search_key}%")))
@@ -450,9 +474,13 @@ def get_all_sale_taxes_by_org_id(org_id,db: _orm.Session, params: _schemas.SaleT
     elif params.sort_key is not None:
         raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found")
     
-    query=query.limit(params.limit).offset(params.offset)
+    filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()
     
-    return query.all()
+    query=query.limit(params.limit).offset(params.offset)
+    db_saletax=query.all()
+    sale_tax = [_schemas.IncomeCategoryRead.from_orm(tax) for tax in db_saletax]
+    
+    return {"data":sale_tax,"total_counts":total_counts,"filtered_counts": filtered_counts}
 
 
 def get_sale_tax_by_id(sale_tax_id: int,db: _orm.Session):
@@ -481,9 +509,12 @@ def update_sale_tax(sale_tax: _schemas.SaleTaxUpdate, db: _orm.Session):
 
 
 def delete_sale_tax(sale_tax_id: int,db: _orm.Session):
-    db_sale_tax = db.query(_models.Sale_tax).filter(_models.Sale_tax.id == sale_tax_id).first()
-    if db_sale_tax is None:
-        return None
+    
+    db_sale_tax = db.query(_models.Sale_tax).filter(and_(_models.Sale_tax.id == sale_tax_id,_models.Sale_tax.is_deleted == False)).first()
+    
+    if not db_sale_tax:
+        raise _fastapi.HTTPException(status_code=404, detail="Sales Tax not found")
+    
     db_sale_tax.is_deleted = True
     db_sale_tax.updated_at = datetime.datetime.now()
     db.commit()
@@ -552,7 +583,7 @@ def update_group(group:_schemas.GroupUpdate,db:_orm.Session):
     
     
 async def delete_group(id:int,db:_orm.Session=Depends(get_db)):
-    db_group=db.query(_models.Membership_group).filter(_models.Membership_group.id == id).first()
+    db_group=db.query(_models.Membership_group).filter(and_(_models.Membership_group.id == id,_models.Membership_group.is_deleted == False)).first()
     
     if not db_group:
         raise _fastapi.HTTPException(status_code=404, detail="Group not found")

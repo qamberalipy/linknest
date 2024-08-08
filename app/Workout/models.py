@@ -79,10 +79,10 @@ class WorkoutDay(_database.Base, HouseKeeping):
     __tablename__ = "workout_day"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    workout_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    day_name: Mapped[str] = mapped_column(String, nullable=True)
-    week: Mapped[int] = mapped_column(Integer, nullable=True)
-    day: Mapped[int] = mapped_column(Integer, nullable=True)
+    workout_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    day_name: Mapped[str] = mapped_column(String, nullable=False)
+    week: Mapped[int] = mapped_column(Integer, nullable=False)
+    day: Mapped[int] = mapped_column(Integer, nullable=False)
 
     workout = relationship(
         "Workout",
@@ -102,10 +102,10 @@ class WorkoutDayExercise(_database.Base, HouseKeeping):
     __tablename__ = "workout_day_exercise"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    workout_day_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    exercise_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    exercise_type: Mapped[ExerciseType] = mapped_column(Enum(ExerciseType), nullable=True)
-    sets: Mapped[int] = mapped_column(Integer, nullable=True)
+    workout_day_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    exercise_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    exercise_type: Mapped[ExerciseType] = mapped_column(Enum(ExerciseType), nullable=False)
+    sets: Mapped[int] = mapped_column(Integer, nullable=False)
     seconds_per_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
     repetitions_per_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
     rest_between_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
