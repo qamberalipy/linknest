@@ -142,5 +142,13 @@ class CoachReadSchema(pydantic.BaseModel):
     class Config:
         from_attributes = True
         arbitrary_types_allowed=True
+        
+class CoachOrganizationResponse(pydantic.BaseModel):
+    id: int
+    name: Optional[str] = None
+    profile_img: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
    
