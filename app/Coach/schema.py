@@ -44,7 +44,6 @@ class CoachCreate(CoachBase):
 
 class CoachUpdate(CoachBase):
     id: int
-    is_deleted:Optional[bool] = False
     updated_by: Optional[int] = None
     member_ids: Optional[List[int]] = []
 

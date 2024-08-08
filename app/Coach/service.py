@@ -220,13 +220,11 @@ def update_bank_detail(coach: _schemas.CoachUpdate, db: _orm.Session, db_coach):
     return db_bank_detail
 
 def update_coach_record(coach: _schemas.CoachUpdate, db: _orm.Session, db_coach):
-    coach.is_deleted = False
     for field, value in coach.dict(exclude_unset=True).items():
         if hasattr(db_coach, field):
             setattr(db_coach, field, value)
     
     db_coach.updated_by = coach.updated_by
-
     db.add(db_coach)
     db.commit()
     db.refresh(db_coach)
