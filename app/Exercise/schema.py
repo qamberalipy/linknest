@@ -13,19 +13,19 @@ class ExerciseBase(pydantic.BaseModel):
     intensity_value:float
     difficulty:Difficulty
     sets :int
-    seconds_per_set:List[int]
-    repetitions_per_set:List[int] 
-    rest_between_set:List[int]  
-    distance:float
-    speed:float
-    met_id :int
+    seconds_per_set:Optional[List[int]]
+    repetitions_per_set:Optional[List[int]] 
+    rest_between_set:Optional[List[int]]  
+    distance:Optional[float]
+    speed:Optional[float]
+    met_id :Optional[int]
     gif_url :str
-    video_url_male :str 
-    video_url_female :str
-    thumbnail_male :str 
-    thumbnail_female :str
-    image_url_female :str
-    image_url_male :str 
+    video_url_male :Optional[str] 
+    video_url_female :Optional[str]
+    thumbnail_male :Optional[str] 
+    thumbnail_female :Optional[str]
+    image_url_female :Optional[str]
+    image_url_male :Optional[str] 
 
     class Config:
             from_attributes = True
