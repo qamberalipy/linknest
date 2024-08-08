@@ -140,29 +140,28 @@ async def get_staff_by_id(id: int, db: _orm.Session = Depends(get_db)):
         print(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
     
-# @router.get("/staff/count/{org_id}", response_model=_schemas.StaffCount, tags=["Staff APIs"])
-# async def get_all_staff(org_id: int, db: _orm.Session = Depends(get_db)):
-    # try:
-    # 
-        # total_staffs = await _services.get_Total_count_staff(org_id, db)
-        # print("Staff list:", total_staffs)
-        # if total_staffs is None:
-            # raise HTTPException(status_code=404, detail="Staff not found")
-        # return {"total_staffs": total_staffs}
-    # except IntegrityError as e:
-        # logger.error(f"IntegrityError: {e}")
-        # print(f"IntegrityError: {e}")
-        # raise HTTPException(status_code=400, detail="Integrity error occurred")
-    # except DataError as e:
-        # logger.error(f"DataError: {e}")
-        # print(f"DataError: {e}")
-        # raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+@router.get("/staff/count/{org_id}", response_model=_schemas.StaffCount, tags=["Staff APIs"])
+async def get_all_staff(org_id: int, db: _orm.Session = Depends(get_db)):
+    try:
+    
+        total_staffs = await _services.get_Total_count_staff(org_id, db)
+        print("Staff list:", total_staffs)
+        if total_staffs is None:
+            raise HTTPException(status_code=404, detail="Staff not found")
+        return {"total_staffs": total_staffs}
+    except IntegrityError as e:
+        logger.error(f"IntegrityError: {e}")
+        print(f"IntegrityError: {e}")
+        raise HTTPException(status_code=400, detail="Integrity error occurred")
+    except DataError as e:
+        logger.error(f"DataError: {e}")
+        print(f"DataError: {e}")
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
    
 
-@router.put("/staff", tags=["Staff APIs"])
+@router.put("/staff", response_model= _schemas.UpdateStaff ,tags=["Staff APIs"])
 async def update_staff(staff_update: _schemas.UpdateStaff, db: _orm.Session = Depends(get_db)):
     try:
-            
         updated_staff = await _services.update_staff(staff_update.id, staff_update, db)
         return updated_staff
     except IntegrityError as e:
