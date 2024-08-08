@@ -85,7 +85,9 @@ class FacilityFilterParams(pydantic.BaseModel):
 
 class data_list(pydantic.BaseModel):
     id:Optional[int]=None    
-    name:Optional[str]=None    
+    name:Optional[str]=None
+    status : Optional[MembershipStatus] = None
+    min_limit : Optional[int] = None  
 
 
 class data_list_income_category(pydantic.BaseModel):
@@ -203,7 +205,6 @@ class MembershipFilterParams(pydantic.BaseModel):
     group_id: Optional[int] = None
     income_category_id: Optional[int] = None
     discount_percentage: Optional[float] = None
-    tax_rate: Optional[float] = None
     total_amount: Optional[float] = None
     status: Optional[MembershipStatus] = None
     search_key: Optional[str] = None

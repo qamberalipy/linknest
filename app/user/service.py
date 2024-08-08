@@ -77,6 +77,7 @@ async def create_organization(org: _schemas.OrganizationCreate, db: _orm.Session
     db.refresh(db_org)
     return db_org
 
+
 async def get_organization(org_id: int, db: _orm.Session) -> models.Organization:
     return db.query(models.Organization).filter(models.Organization.id == org_id, models.Organization.is_deleted == False).first()
 
@@ -97,6 +98,21 @@ async def delete_organization(org_id: int, db: _orm.Session):
     db_org.is_deleted = True
     db.commit()
     return db_org
+
+async def get_opening_hours(org_id: int, db: _orm.Session) -> _models.Organization:
+    return db.query(_models.Organization).filter(_models.Organization.id == org_id).first()
+
+async def update_opening_hours(org_id: int, opening_hours_data: _schemas.OpeningHoursUpdate, db: _orm.Session):
+    organization = db.query(_models.Organization).filter(_models.Organization.id == org_id).first()
+    if organization:
+        organization.opening_hours = opening_hours_data.opening_hours
+        organization.opening_hours_notes = opening_hours_data.opening_hours_notes
+        organization.updated_at = datetime.datetime.now()
+        db.commit()
+        db.refresh(organization)
+        return organization
+    return None
+
 
 async def create_user(user: _schemas.UserRegister, db: _orm.Session):
     try:
@@ -243,7 +259,7 @@ async def update_staff(staff_id: int, staff_update: _schemas.UpdateStaff, db: _o
     staff.updated_at = datetime.now()
     db.commit()
     db.refresh(staff)
-    return {"status":"201","detail":"Staff updated successfully"}
+    return staff
 
 
 async def delete_staff(staff_id: int, db: _orm.Session):
@@ -337,6 +353,7 @@ async def create_role(role: _schemas.RoleCreate, db: _orm.Session = _fastapi.Dep
     db_role = _models.Role(
         name=role.name,
         org_id=role.org_id,
+        status = role.status,
         is_deleted=0
     )
     db.add(db_role)
@@ -512,7 +529,8 @@ async def get_role(role_id: int, db: _orm.Session):
 
 
 async def edit_role(role: _schemas.RoleUpdate, db: _orm.Session):
-    db_role = db.query(_models.Role).filter(_models.Role.id == role.id).first()
+    db_role = db.query(_models.Role).filter(_models.Role.id == role.id, _models.Role.is_deleted == False).first()
+    
     if db_role is None:
         raise _fastapi.HTTPException(status_code=404, detail="Role not found")
     
@@ -566,7 +584,7 @@ async def delete_role(role_id: int, db: _orm.Session):
         raise _fastapi.HTTPException(status_code=404, detail="Role not found")
     
     role.is_deleted = 1
-    role.status = 0
+    role.status = 'inactive'
     db.commit()
 
     permissions = db.query(_models.Permission).filter(_models.Permission.role_id == role_id).all()

@@ -39,7 +39,23 @@ def get_db():
         yield db
     finally:
         db.close()
-        
+
+async def get_coach_organzation(email: str, db: _orm.Session) -> List[_schemas.CoachOrganizationResponse]:
+    db_client = db.query(
+        _usermodels.Organization.id,
+        _usermodels.Organization.name,
+        _usermodels.Organization.profile_img
+    ).join(
+        _models.CoachOrganization,
+        _models.CoachOrganization.org_id == _usermodels.Organization.id
+    ).join(
+        _models.Coach,
+        _models.Coach.id == _models.CoachOrganization.coach_id and _models.Coach.email == email
+    ).filter(
+        _models.Coach.email == email
+    ).all()
+    return db_client
+
 def create_appcoach(coach: _schemas.CoachAppBase,db: _orm.Session):
    
     
@@ -273,7 +289,7 @@ def update_coach_organization(coach_id: int, org_id: int, coach_status: str, upd
 async def update_coach(coach_id:int , coach: _schemas.CoachUpdate,Type:str,db: _orm.Session):
 
     db_coach = db.query(_models.Coach).filter(
-        _models.Coach.id == coach_id
+        _models.Coach.id == coach_id, _models.Coach.is_deleted == False
     ).first()
     
     if not db_coach:
@@ -295,7 +311,7 @@ async def update_coach(coach_id:int , coach: _schemas.CoachUpdate,Type:str,db: _
     )
     if Type=="app":
         return db_coach
-    return {"status":"201","detail":"Coach updated successfully"}
+    return db_coach
 
 
 

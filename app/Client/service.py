@@ -15,6 +15,7 @@ import app.Client.schema as _schemas
 import app.Client.models as _models
 import app.Coach.models as _coach_models
 import app.Shared.helpers as _helpers
+import app.user.models as _user_models
 import random
 import json
 import pika
@@ -41,6 +42,24 @@ def get_db():
         yield db
     finally:
         db.close()
+
+async def get_client_organzation(email: str, db: _orm.Session) -> List[_schemas.ClientOrganizationResponse]:
+    db_client = db.query(
+        _user_models.Organization.id,
+        _user_models.Organization.name,
+        _user_models.Organization.profile_img
+    ).join(
+        _models.ClientOrganization,
+        _models.ClientOrganization.org_id == _user_models.Organization.id
+    ).join(
+        _models.Client,
+        _models.Client.id == _models.ClientOrganization.client_id
+    ).filter(
+        _models.Client.email == email
+    ).all()
+    
+    # organizations = [_schemas.ClientOrganizationResponse(id=org.id, name=org.name, profile_img=org.profile_img) for org in db_client]
+    return db_client
 
 
 def generate_own_member_id():
@@ -116,27 +135,50 @@ async def login_client(
     wallet_address: str,
     db: _orm.Session = _fastapi.Depends(get_db),
 ) -> dict:
-    client = (
-        db.query(models.Client, _models.ClientOrganization)
-        .filter(
-            _models.Client.email == email_address, _models.Client.is_deleted == False
+
+    query = (
+        db.query(
+            *_models.Client.__table__.columns,
+            func.array_agg(
+                func.json_build_object(
+                    'id', func.coalesce(models.ClientOrganization.org_id, 0),
+                    'name', func.coalesce(_user_models.Organization.name, ""),
+                    'profile_url', func.coalesce(_user_models.Organization.profile_img, "")
+                )
+            ).label('organizations')
         )
-        .first()
+        .outerjoin(
+            models.ClientOrganization,
+            models.ClientOrganization.client_id == models.Client.id
+        )
+        .outerjoin(
+            _user_models.Organization,
+            _user_models.Organization.id == models.ClientOrganization.org_id
+        )
+        .filter(
+            models.Client.email == email_address,
+            models.Client.is_deleted == False
+        )
+        .group_by(
+            *_models.Client.__table__.columns
+        )
     )
+
+    client = query.first()
 
     if not client:
         return {"is_registered": False}
 
-    client = client[0]
-    client.wallet_address = wallet_address
-    db.commit()
-    db.refresh(client)
-    
+    client_dict = client._asdict()
+    # client_dict["wallet_address"] = wallet_address
+    print("client_dict: ",client_dict)
+
+    # db.commit()
+    # db.refresh(client)
 
     token = _helpers.create_token(dict(id=client.id), "Member")
 
-    return {"is_registered": True, "client": client, "access_token": token}
-
+    return {"is_registered": True, "client": client_dict, "access_token": token}
 
 async def get_client_by_email(
     email_address: str, db: _orm.Session = _fastapi.Depends(get_db)
@@ -168,7 +210,8 @@ async def update_client(
     client: _schemas.ClientUpdate,
     db: _orm.Session = _fastapi.Depends(get_db),
 ):
-    db_client = db.query(_models.Client).filter(and_(_models.Client.id == client_id,_models.Client.is_deleted == False)).first()
+    db_client = db.query(_models.Client).filter(_models.Client.id == client_id).first()
+    print("db_client: ",db_client)
     if not db_client:
         raise _fastapi.HTTPException(status_code=404, detail="Member not found")
     
@@ -188,7 +231,7 @@ async def update_client(
     db.refresh(db_client)
     db.refresh(db_client_status)
     
-    return {"status":"201","detail":"Member updated successfully"}
+    return db_client
 
 
 async def update_client_membership(

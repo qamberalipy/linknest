@@ -52,30 +52,11 @@ class BankAccountCreate(pydantic.BaseModel):
 class OrganizationCreateTest(pydantic.BaseModel):
     name: str
 
-class BusinessTypeEnum(str, PyEnum):
-    bootcamp = "Bootcamp"
-    community_services = "Community Services"
-    corporate_health = "Corporate Health"
-    crossfit_box = "CrossFit Box"
-    dance_studio = "Dance Studio"
-    dietitian = "Dietitian"
-    educational_institute = "Educational Institute"
-    fitness_center = "Fitness Center"
-    hospital_clinic = "Hospital or Clinic"
-    lifestyle_coach = "Lifestyle Coach"
-    martial_arts_center = "Martial Arts Center"
-    online_coach = "Online Coach"
-    personal_trainer = "Personal Trainer"
-    personal_training_studio = "Personal Training Studio"
-    physiotherapy_clinic = "Physiotherapy Clinic"
-    yoga_pilates_studio = "Yoga or Pilates Studio"
-    other = "Other" 
-
 class OrganizationBase(pydantic.BaseModel):
     name: str
     email: Optional[str]=None
     profile_img:Optional[str] = None
-    business_type: Optional[BusinessTypeEnum]=None
+    business_type: Optional[str]=None
     description: Optional[str] = None
     address: Optional[str] = None
     zipcode: Optional[str] = None
@@ -107,13 +88,34 @@ class OrganizationUpdate(OrganizationBase):
 
 class OrganizationRead(OrganizationBase):
     id: int
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+    created_at: Optional[datetime.datetime]=None
+    updated_at: Optional[datetime.datetime]=None
 
     class Config:
         from_attributes = True
 
+class OpeningHoursBase(pydantic.BaseModel):
 
+    opening_hours: Optional[dict] = None
+    opening_hours_notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+    
+class OpeningHoursRead(OpeningHoursBase):
+    id: int
+    created_at: Optional[datetime.datetime]=None
+    updated_at: Optional[datetime.datetime]=None
+
+    class Config:
+        from_attributes = True
+
+class OpeningHoursUpdate(OpeningHoursBase):
+    id:int
+    
+    class Config:
+        from_attributes = True
+        
 
 class getStaff(pydantic.BaseModel):
     
@@ -323,14 +325,13 @@ class RoleUpdate(pydantic.BaseModel):
     id: int
     name: Optional[str] = None
     org_id: int
-    status: Optional[bool] = None
+    status: Optional[RoleStatus] = []
     resource_id: Optional[List[int]] = None
     access_type: Optional[List[str]] = None
     created_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
     updated_by: Optional[int] = None
     updated_at: Optional[datetime.datetime] = None
-    is_deleted: Optional[bool] = False
 
     class Config:
         from_attributes = True

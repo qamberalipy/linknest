@@ -17,7 +17,7 @@ from sqlalchemy.sql import and_  ,desc
 from fastapi import FastAPI, Header,APIRouter, Depends, HTTPException, Request, status
 from . import models, schema
 from typing import List 
-from sqlalchemy import asc, func, or_, text
+from sqlalchemy import String, asc, cast, func, or_, text
 from app.Exercise.service import extract_columns
 
 # Load environment variables
@@ -128,8 +128,7 @@ def update_membership_plan(membership_plan_id: int, membership_plan: _schemas.Me
     if membership_plan.facilities:
         update_facility_membership_plans(membership_plan_id, membership_plan.facilities, db)
 
-    return {"status":"201","detail":"Membership Plan updated successfully"}
-
+    return db_membership_plan
 
 def delete_membership_plan( membership_plan_id: int,db: _orm.Session):
     db_membership_plan = db.query(models.MembershipPlan).filter(and_(models.MembershipPlan.id == membership_plan_id,_models.MembershipPlan.is_deleted == False)).first()
@@ -190,83 +189,97 @@ def get_membership_plan_by_id(membership_plan_id: int, db: _orm.Session):
 
 def get_membership_plans_by_org_id(
     db: _orm.Session,
-    org_id:int,
-    parameters: _schemas.MembershipFilterParams
+    org_id: int,
+    params: _schemas.MembershipFilterParams
 ):
-    filters = ["mp.org_id = :org_id", "mp.is_deleted = False"]
-    params = {"org_id": org_id}
+  
+    sort_order = desc(_models.MembershipPlan.created_at) if params.sort_order == "desc" else asc(_models.MembershipPlan.created_at)
+   
+    query = db.query(
+        _models.MembershipPlan.id,
+        _models.MembershipPlan.name,
+        _models.MembershipPlan.org_id,
+        _models.MembershipPlan.group_id,
+        _models.MembershipPlan.status,
+        _models.MembershipPlan.description,
+        _models.MembershipPlan.access_time,
+        _models.MembershipPlan.net_price,
+        _models.MembershipPlan.income_category_id,
+        _models.MembershipPlan.discount,
+        _models.MembershipPlan.total_price,
+        _models.MembershipPlan.payment_method,
+        _models.MembershipPlan.reg_fee,
+        _models.MembershipPlan.billing_cycle,
+        _models.MembershipPlan.auto_renewal,
+        _models.MembershipPlan.renewal_details,
+        _models.MembershipPlan.created_by,
+        _models.MembershipPlan.created_at,
+        func.array_agg(
+            func.json_build_object(
+                'id', func.coalesce(_models.Facility.id, 0),
+                'total_credits', func.coalesce(_models.Facility_membership_plan.total_credits, 0),
+                'validity', func.coalesce(_models.Facility_membership_plan.validity, "{}"),
+            )
+        ).label('facilities')
+    ).outerjoin(
+        _models.Facility_membership_plan, _models.Facility_membership_plan.membership_plan_id == _models.MembershipPlan.id
+    ).outerjoin(
+        _models.Facility, _models.Facility.id == _models.Facility_membership_plan.facility_id
+    ).filter(
+        _models.MembershipPlan.is_deleted == False,
+        _models.MembershipPlan.org_id == org_id
+    ).group_by(
+        _models.MembershipPlan.id,
+        _models.MembershipPlan.name,
+        _models.MembershipPlan.org_id,
+        _models.MembershipPlan.group_id,
+        _models.MembershipPlan.status,
+        _models.MembershipPlan.description,
+        cast(_models.MembershipPlan.access_time,String),
+        _models.MembershipPlan.net_price,
+        _models.MembershipPlan.income_category_id,
+        _models.MembershipPlan.discount,
+        _models.MembershipPlan.total_price,
+        _models.MembershipPlan.payment_method,
+        _models.MembershipPlan.reg_fee,
+        _models.MembershipPlan.billing_cycle,
+        _models.MembershipPlan.auto_renewal,
+        cast(_models.MembershipPlan.renewal_details,String),
+        _models.MembershipPlan.created_by,
+        _models.MembershipPlan.created_at,
+    )
+    total_counts = db.query(func.count()).select_from(query.subquery()).scalar()
+    if params.search_key:
+        query = query.filter(or_(
+            _models.MembershipPlan.name.ilike(f"%{params.search_key}%"),
+        ))
+    if params.group_id:
+        query = query.filter(_models.MembershipPlan.group_id == params.group_id)
+    
+    if params.income_category_id:
+        query = query.filter(_models.MembershipPlan.income_category_id == params.income_category_id)
 
-    if parameters.group_id is not None:
-        filters.append("mp.group_id = :group_id")
-        params["group_id"] = parameters.group_id
+    if params.discount_percentage:
+        query = query.filter(_models.MembershipPlan.discount >= params.discount_percentage)
 
-    if parameters.income_category_id is not None:
-        filters.append("mp.income_category_id = :income_category_id")
-        params["income_category_id"] = parameters.income_category_id
-
-    if parameters.discount_percentage is not None:
-        filters.append("mp.discount = :discount_percentage")
-        params["discount_percentage"] = parameters.discount_percentage
-
-    if parameters.total_amount is not None:
-        filters.append("mp.total_price = :total_amount")
-        params["total_amount"] = parameters.total_amount
-
-    if parameters.status is not None:
-        filters.append("mp.status = :status")
-        params["status"] = parameters.status
-
-    if parameters.search_key is not None:
-        filters.append("mp.name ILIKE :name")
-        params["name"] = f"%{parameters.search_key}%"
-
-    sort_order = "ASC" if parameters.sort_order.lower() == "asc" else "DESC"
-
-    query = text(f"""
-        SELECT 
-            mp.id,
-            mp.name,
-            mp.org_id,
-            mp.group_id,
-            mp.status,
-            mp.description,
-            mp.access_time,
-            mp.net_price,
-            mp.income_category_id,
-            mp.discount,
-            mp.total_price,
-            mp.payment_method,
-            mp.reg_fee,
-            mp.billing_cycle,
-            mp.auto_renewal,
-            mp.renewal_details,
-            mp.created_by,
-            mp.created_at,
-            json_agg(
-                json_build_object(
-                    'id', COALESCE(f.id, 0),
-                    'total_credits', COALESCE(fmp.total_credits, 0),
-                    'validity', fmp.validity
-                )
-            ) AS facilities
-        FROM membership_plan mp
-        LEFT JOIN facility_membership_plan fmp ON fmp.membership_plan_id = mp.id
-        LEFT JOIN facility f ON f.id = fmp.facility_id
-        WHERE {" AND ".join(filters)}
-        GROUP BY 
-            mp.id, mp.name, mp.org_id, mp.group_id, mp.status, 
-            mp.description, CAST(mp.access_time AS text), mp.net_price, 
-            mp.income_category_id, mp.discount, mp.total_price, mp.payment_method,
-            mp.reg_fee, mp.billing_cycle, mp.auto_renewal, CAST(mp.renewal_details AS text), mp.created_by, mp.created_at
-        ORDER BY mp.created_at {sort_order}
-        LIMIT :limit OFFSET :offset;
-    """)
-
-    params["limit"] = parameters.limit
-    params["offset"] = parameters.offset
-
-    result = db.execute(query, params)
-    return result
+    if params.total_amount:
+        query = query.filter(_models.MembershipPlan.total_price >= params.total_amount)  
+    
+    if params.status:
+        query = query.filter(_models.MembershipPlan.status >= params.status)
+    
+    filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()    
+    
+    query = query.offset(params.offset).limit(params.limit)
+    
+    result = query.all()
+    membership_plan = []
+    for membershipplans in result:
+        membership_plan.append(_schemas.MembershipPlanResponse(**membershipplans._asdict()))
+    print(membership_plan)
+    
+    return {"data":membership_plan,"total_counts":total_counts,"filtered_counts": filtered_counts}
+  
 
 def create_facility(facility: _schemas.FacilityCreate,db: _orm.Session):
     
@@ -310,7 +323,7 @@ def update_facility(facility_update: _schemas.FacilityUpdate, db: _orm.Session):
 
     db.commit()
     db.refresh(db_facility)
-    return {"status":"201","detail":"Facility updated successfully"}
+    return db_facility
 
 
 def delete_facility(facility_id: int,db: _orm.Session):
@@ -435,7 +448,7 @@ def update_income_category(income_category: _schemas.IncomeCategoryUpdate, db: _
 
     db.commit()
     db.refresh(db_income_category)
-    return {"status":"201","detail":"Income Category updated successfully"}
+    return db_income_category
 
 def delete_income_category(income_category_id: int, db: _orm.Session):
     db_income_category = db.query(_models.Income_category).filter(and_(_models.Income_category.id == income_category_id,_models.Income_category.is_deleted == False)).first()
@@ -517,7 +530,7 @@ def update_sale_tax(sale_tax: _schemas.SaleTaxUpdate, db: _orm.Session):
 
     db.commit()
     db.refresh(db_sale_tax)
-    return {"status":"201","detail":"Sale Tax updated successfully"}
+    return db_sale_tax
 
 
 def delete_sale_tax(sale_tax_id: int,db: _orm.Session):

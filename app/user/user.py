@@ -37,8 +37,17 @@ async def create_organization(org: _schemas.OrganizationCreate, db: _orm.Session
     try:
         new_org = await _services.create_organization(org, db)
         return new_org
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"IntegrityError: {e}")
+        raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
+
+    except DataError as e:
+        db.rollback()
+        logger.error(f"DataError: {e}")
+        raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+ 
 
 @router.get("/organizations/{id}", response_model=_schemas.OrganizationRead, tags=["Organizations API"])
 async def get_organization(id: int, db: _orm.Session = Depends(get_db)):
@@ -61,6 +70,19 @@ async def delete_organization(id: int, db: _orm.Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Organization not found")
     return deleted_org
 
+@router.get("/opening_hours/{id}", response_model=_schemas.OpeningHoursRead, tags=["Organizations API"])
+async def read_opening_hours(id: int, db: _orm.Session = Depends(get_db)):
+    organization = await _services.get_opening_hours(id, db)
+    if organization:
+        return organization
+    raise HTTPException(status_code=404, detail="Organization not found")
+
+@router.put("/opening-hours", response_model=_schemas.OpeningHoursRead, tags=["Organizations API"])
+async def update_opening_hours(opening_hours_data: _schemas.OpeningHoursUpdate, db: _orm.Session = Depends(get_db)):
+    updated_organization = await _services.update_opening_hours(opening_hours_data.id, opening_hours_data, db)
+    if updated_organization:
+        return updated_organization
+    raise HTTPException(status_code=404, detail="Organization not found")
 
 @router.get("/staff/list",response_model=List[_schemas.getStaff],tags=["Staff APIs"])
 async def get_staff_list(org_id:int, db: _orm.Session= Depends(get_db)):
@@ -137,10 +159,9 @@ async def get_all_staff(org_id: int, db: _orm.Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
    
 
-@router.put("/staff", tags=["Staff APIs"])
+@router.put("/staff", response_model= _schemas.UpdateStaff ,tags=["Staff APIs"])
 async def update_staff(staff_update: _schemas.UpdateStaff, db: _orm.Session = Depends(get_db)):
     try:
-            
         updated_staff = await _services.update_staff(staff_update.id, staff_update, db)
         return updated_staff
     except IntegrityError as e:

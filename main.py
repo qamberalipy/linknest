@@ -66,7 +66,7 @@ async def authorization(
 
 root_router = APIRouter(dependencies=[Depends(authorization)])
 
-app = FastAPI(title="Lets Move API", root_path=ROOT_PATH)
+app = FastAPI(title="Lets Move API", root_path=ROOT_PATH, swagger_ui_parameters={'displayRequestDuration': True})
 
 app.add_middleware(
     CORSMiddleware,
