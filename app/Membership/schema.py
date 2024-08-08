@@ -200,7 +200,6 @@ class MembershipFilterParams(pydantic.BaseModel):
     group_id: Optional[int] = None
     income_category_id: Optional[int] = None
     discount_percentage: Optional[float] = None
-    tax_rate: Optional[float] = None
     total_amount: Optional[float] = None
     status: Optional[MembershipStatus] = None
     search_key: Optional[str] = None

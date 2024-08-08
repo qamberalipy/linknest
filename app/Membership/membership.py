@@ -61,11 +61,10 @@ def get_membership_plan_by_id(id: int, db: _orm.Session = Depends(get_db)):
 def get_membership_filters(
     
     search_key: Annotated[str | None, Query(title="Search Key")] = None,
-    group_id: Annotated[int, Query(description="Coach ID")] = None,
-    income_category_id: Annotated[int, Query(description="Coach ID")] = None,
-    discount_percentage: Annotated[int, Query(description="Coach ID")] = None,
-    tax_rate: Annotated[int, Query(description="Coach ID")] = None,
-    total_amount: Annotated[int, Query(description="Membership ID")] = None,
+    group_id: Annotated[int, Query(description="group id")] = None,
+    income_category_id: Annotated[int, Query(description="Income Category ID")] = None,
+    discount_percentage: Annotated[int, Query(description="discount_percentage")] = None,
+    total_amount: Annotated[int, Query(description="total_amount")] = None,
     status: Annotated[MembershipStatus | None, Query(title="status")] = None,
     sort_order: Annotated[str,Query(title="Sorting Order")] = 'desc',
     limit: Annotated[int, Query(description="Pagination Limit")] = None,
@@ -76,7 +75,6 @@ def get_membership_filters(
         group_id=group_id,
         income_category_id=income_category_id,
         discount_percentage=discount_percentage,
-        tax_rate=tax_rate,
         total_amount=total_amount,
         status=status,
         sort_order = sort_order,
@@ -84,16 +82,14 @@ def get_membership_filters(
         offset = offset
     )
    
-@router.get("/membership_plan", response_model=List[_schemas.MembershipPlanResponse], tags=["Membership Plans"])
+@router.get("/membership_plan", tags=["Membership Plans"])
 def get_membership_plans_by_org_id(
     org_id: int,
     filters: Annotated[_schemas.MembershipFilterParams, Depends(get_membership_filters)] = None,
     db: _orm.Session = Depends(get_db)
 ):
     
-    membership_plans = _services.get_membership_plans_by_org_id(
-        db,org_id,filters
-    )
+    membership_plans = _services.get_membership_plans_by_org_id(db,org_id,filters)
     return membership_plans
 
     
