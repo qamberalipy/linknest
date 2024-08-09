@@ -81,9 +81,9 @@ class ExerciseUpdate(pydantic.BaseModel):
     seconds_per_set:Optional[List[int]]
     repetitions_per_set:Optional[List[int]] 
     rest_between_set:Optional[List[int]]  
-    distance:float
-    speed:float
-    met_id :int
+    distance:Optional[float]
+    speed:Optional[float]
+    met_id :Optional[int]
     gif_url :str
     video_url_male :Optional[str] 
     video_url_female :Optional[str]

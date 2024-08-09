@@ -228,7 +228,7 @@ def get_filters(
     primary_muscle: Annotated[list[int],_fastapi.Query(title="Primary Muscle")]=None,
     primary_joint: Annotated[list[int],_fastapi.Query(title="Primary Joint")]=None,
     sort_key:Annotated[str, _fastapi.Query(title="Sort Key")] = None,
-    sort_order:Annotated[str, _fastapi.Query(title="Sort Order")] = 'asc',
+    sort_order:Annotated[str, _fastapi.Query(title="Sort Order")] = 'desc',
     limit: Annotated[int, _fastapi.Query(description="Pagination Limit")] = None,
     offset: Annotated[int, _fastapi.Query(description="Pagination offset")] = None
 ):
