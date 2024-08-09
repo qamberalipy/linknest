@@ -105,6 +105,9 @@ async def get_food_by_org_id(db: _orm.Session,org_id: int,params: _schemas.FoodF
         raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
     
     filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()
+    
+    query=query.limit(params.limit).offset(params.offset)
+    
     db_foods = query.all()
     
     foods = []
