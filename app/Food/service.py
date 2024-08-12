@@ -114,7 +114,6 @@ async def get_food_by_org_id(db: _orm.Session,org_id: int,params: _schemas.FoodF
     for food in db_foods:
         foods.append(food)
 
-    if foods:
-        return {"data":foods,"total_counts":total_counts,"filtered_counts": filtered_counts}
-    else:
-        return None
+    
+    return {"data":foods,"total_counts":total_counts,"filtered_counts": filtered_counts}
+    
