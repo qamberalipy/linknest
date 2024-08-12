@@ -315,8 +315,6 @@ async def get_exercise(
         ).label('equipments')
     ).join(
         Equipment, _models.ExerciseEquipment.equipment_id == Equipment.id
-    ).filter(
-        _models.ExerciseEquipment.exercise_id.in_(db.query(filtered_exercise_query.c.id))
     ).group_by(_models.ExerciseEquipment.exercise_id).subquery()
 
     primary_muscle_query = db.query(
@@ -326,8 +324,6 @@ async def get_exercise(
         ).label('primary_muscles')
     ).join(
         PrimaryMuscle, _models.ExercisePrimaryMuscle.muscle_id == PrimaryMuscle.id
-    ).filter(
-        _models.ExercisePrimaryMuscle.exercise_id.in_(db.query(filtered_exercise_query.c.id))
     ).group_by(_models.ExercisePrimaryMuscle.exercise_id).subquery()
 
     secondary_muscle_query = db.query(
@@ -337,8 +333,6 @@ async def get_exercise(
         ).label('secondary_muscles')
     ).join(
         SecondaryMuscle, _models.ExerciseSecondaryMuscle.muscle_id == SecondaryMuscle.id
-    ).filter(
-        _models.ExerciseSecondaryMuscle.exercise_id.in_(db.query(filtered_exercise_query.c.id))
     ).group_by(_models.ExerciseSecondaryMuscle.exercise_id).subquery()
 
     primary_joint_query = db.query(
@@ -348,8 +342,6 @@ async def get_exercise(
         ).label('primary_joints')
     ).join(
         PrimaryJoint, _models.ExercisePrimaryJoint.primary_joint_id == PrimaryJoint.id
-    ).filter(
-        _models.ExercisePrimaryJoint.exercise_id.in_(db.query(filtered_exercise_query.c.id))
     ).group_by(_models.ExercisePrimaryJoint.exercise_id).subquery()
 
     # Final main query with joins
@@ -394,6 +386,8 @@ async def get_exercise(
         primary_joint_query, filtered_exercise_query.c.id == primary_joint_query.c.exercise_id
     )
 
+    print("This is query",query)
+
     if id:
         query = query.filter(filtered_exercise_query.c.id == id)
         return query.first()
@@ -419,6 +413,9 @@ async def get_exercise(
     
     
     
+
+
+
 
 
 
