@@ -200,7 +200,8 @@ def get_membership_plans_by_org_id(
         "status" : text("membership_plan.status"),
         "total_price":text("membership_plan.total_price"),
         "discount":text("membership_plan.discount"),
-        "created_at" : text("membership_plan.created_at")
+        "created_at" : text("membership_plan.created_at"),
+        "net_price":text("membership_plan.net_price")
         }
 
 
@@ -367,11 +368,8 @@ def get_facility_by_org_id(org_id : int , params : _schemas.FacilityFilterParams
         }
     
     facilities_query = db.query(_models.Facility)\
-        .filter(_models.Facility.org_id == org_id, _models.Facility.is_deleted == False)\
-        .order_by(sort_order)\
-        .offset(params.offset)\
-        .limit(params.limit)
-    
+        .filter(_models.Facility.org_id == org_id, _models.Facility.is_deleted == False)
+        
     total_counts = db.query(func.count()).select_from(facilities_query.subquery()).scalar()    
         
     if params.search_key:
@@ -390,6 +388,7 @@ def get_facility_by_org_id(org_id : int , params : _schemas.FacilityFilterParams
         raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
     
     filtered_counts = db.query(func.count()).select_from(facilities_query.subquery()).scalar()    
+    facilities_query=facilities_query.offset(params.offset).limit(params.limit)
     db_facilities= facilities_query.all()
 
     facilities_data = [_schemas.FacilityRead.from_orm(facility) for facility in db_facilities]
@@ -503,8 +502,8 @@ def get_all_sale_taxes_by_org_id(org_id,db: _orm.Session, params: _schemas.SaleT
         "created_at": text("sale_tax.created_at")
         }
     
-    query = db.query(_models.Sale_tax)\
-    .filter(_models.Sale_tax.org_id == org_id, _models.Sale_tax.is_deleted == False)\
+    query = db.query(*_models.Sale_tax.__table__.columns)\
+    .filter(and_(_models.Sale_tax.org_id == org_id, _models.Sale_tax.is_deleted == False))\
      
     total_counts = db.query(func.count()).select_from(query.subquery()).scalar()    
         
@@ -525,7 +524,7 @@ def get_all_sale_taxes_by_org_id(org_id,db: _orm.Session, params: _schemas.SaleT
     
     query=query.limit(params.limit).offset(params.offset)
     db_saletax=query.all()
-    sale_tax = [_schemas.IncomeCategoryRead.from_orm(tax) for tax in db_saletax]
+    sale_tax = [_schemas.SaleTaxRead.from_orm(tax) for tax in db_saletax]
     
     return {"data":sale_tax,"total_counts":total_counts,"filtered_counts": filtered_counts}
 

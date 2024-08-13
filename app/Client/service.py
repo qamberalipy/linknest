@@ -471,14 +471,13 @@ def get_filtered_clients(
     ).outerjoin(
         _models.ClientCoach, _models.Client.id == _models.ClientCoach.client_id
     ).outerjoin(
-        _coach_models.Coach, _coach_models.Coach.id == _models.ClientCoach.coach_id
+        and_(_coach_models.Coach, _coach_models.Coach.id == _models.ClientCoach.coach_id,_coach_models.Coach.is_deleted == False)
     ).join(
         _models.ClientOrganization, _models.Client.id == _models.ClientOrganization.client_id
     ).join(
         _models.ClientMembership, _models.Client.id == _models.ClientMembership.client_id
     ).filter(
         _models.Client.is_deleted == False,
-        _coach_models.Coach.is_deleted == False,
         _models.ClientOrganization.org_id == org_id
     ).group_by(
         _models.Client.id,

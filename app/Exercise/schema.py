@@ -1,6 +1,6 @@
 
 import pydantic
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, List, Optional
 from app.Exercise.models import ExerciseType,VisibleFor,Difficulty,Intensity
 
@@ -61,6 +61,7 @@ class ExerciseCreate(ExerciseBase):
 class ExerciseRead(ExerciseBase):
     id:int
     category_id:int
+    created_at:datetime
     category_name:str
     equipments:Optional[List[Dict]]
     primary_muscles:Optional[List[Dict]]

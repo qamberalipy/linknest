@@ -262,67 +262,76 @@ def extract_columns(query):
     return columns
 
 
-async def get_exercise(params:Optional[_schemas.ExerciseFilterParams]=None,org_id:Optional[int]=None,id:Optional[int]=None,db: _orm.Session = _fastapi.Depends(get_db)):
-    
+async def get_exercise(
+    params: Optional[_schemas.ExerciseFilterParams] = None,
+    org_id: Optional[int] = None,
+    id: Optional[int] = None,
+    db: _orm.Session = _fastapi.Depends(get_db)
+):
     sort_mapping = {
-        "exercise_name": text("exercise_1.exercise_name"),
-        "category_name":text("exercise_category.category_name"),
-        "visible_for": text("exercise_1.visible_for"),
-        "created_at" : text("exercise_1.created_at")
-        }
+        "exercise_name": text("filtered_exercise.exercise_name"),
+        "category_name": text("exercise_category.category_name"),
+        "visible_for": text("filtered_exercise.visible_for"),
+        "created_at": text("filtered_exercise.created_at")
+    }
     
     PrimaryMuscle = aliased(_models.Muscle)
     SecondaryMuscle = aliased(_models.Muscle)
     PrimaryJoint = aliased(_models.PrimaryJoint)
     Equipment = aliased(_models.Equipment)
-    Exercise=aliased(_models.Exercise)
+    Exercise = aliased(_models.Exercise)
 
     if id:
-        check_exercise=db.query(Exercise).filter(Exercise.id == id).first()
+        check_exercise = db.query(Exercise).filter(Exercise.id == id).first()
         if not check_exercise:
             raise _fastapi.HTTPException(status_code=400, detail="Exercise Not Found")  
     
     if org_id:
-        check_organization=db.query(Exercise.org_id).filter(Exercise.org_id == org_id).first()
+        check_organization = db.query(Exercise.org_id).filter(Exercise.org_id == org_id).first()
         if not check_organization:
             raise _fastapi.HTTPException(status_code=400, detail="Organization Not Found")
  
+    query = db.query(Exercise).filter(Exercise.is_deleted == False)
+
+    if org_id:
+        query = query.filter(Exercise.org_id == org_id)
+
     equipment_query = db.query(
-    _models.ExerciseEquipment.exercise_id,
-    func.json_agg(
-        func.json_build_object('id',Equipment.id, 'name',Equipment.equipment_name)
-    ).label('equipments')
+        _models.ExerciseEquipment.exercise_id,
+        func.json_agg(
+            func.json_build_object('id', Equipment.id, 'name', Equipment.equipment_name)
+        ).label('equipments')
     ).join(
         Equipment, _models.ExerciseEquipment.equipment_id == Equipment.id
-    ).group_by(_models.ExerciseEquipment.exercise_id)    
- 
+    ).group_by(_models.ExerciseEquipment.exercise_id)
+
     primary_muscle_query = db.query(
         _models.ExercisePrimaryMuscle.exercise_id,
         func.json_agg(
-            func.json_build_object('id', func.coalesce(PrimaryMuscle.id,0), 'name', func.coalesce(PrimaryMuscle.muscle_name,""))
+            func.json_build_object('id', func.coalesce(PrimaryMuscle.id, 0), 'name', func.coalesce(PrimaryMuscle.muscle_name, ""))
         ).label('primary_muscles')
     ).join(
         PrimaryMuscle, _models.ExercisePrimaryMuscle.muscle_id == PrimaryMuscle.id
     ).group_by(_models.ExercisePrimaryMuscle.exercise_id)
-         
+
     secondary_muscle_query = db.query(
-       _models.ExerciseSecondaryMuscle.exercise_id,
+        _models.ExerciseSecondaryMuscle.exercise_id,
         func.json_agg(
-            func.json_build_object('id', func.coalesce(SecondaryMuscle.id,0), 'name', func.coalesce(SecondaryMuscle.muscle_name,""))
+            func.json_build_object('id', func.coalesce(SecondaryMuscle.id, 0), 'name', func.coalesce(SecondaryMuscle.muscle_name, ""))
         ).label('secondary_muscles')
     ).join(
         SecondaryMuscle, _models.ExerciseSecondaryMuscle.muscle_id == SecondaryMuscle.id
-    ).group_by( _models.ExerciseSecondaryMuscle.exercise_id).subquery()
+    ).group_by(_models.ExerciseSecondaryMuscle.exercise_id).subquery()
 
     primary_joint_query = db.query(
-         _models.ExercisePrimaryJoint.exercise_id,
+        _models.ExercisePrimaryJoint.exercise_id,
         func.json_agg(
-            func.json_build_object('id', func.coalesce(PrimaryJoint.id,0), 'name', func.coalesce(PrimaryJoint.joint_name,""))
+            func.json_build_object('id', func.coalesce(PrimaryJoint.id, 0), 'name', func.coalesce(PrimaryJoint.joint_name, ""))
         ).label('primary_joints')
     ).join(
         PrimaryJoint, _models.ExercisePrimaryJoint.primary_joint_id == PrimaryJoint.id
     ).group_by(_models.ExercisePrimaryJoint.exercise_id)
-    
+
     if params:
         if params.equipment:
             equipment_query = equipment_query.filter(_models.ExerciseEquipment.equipment_id.in_(params.equipment))
@@ -332,85 +341,83 @@ async def get_exercise(params:Optional[_schemas.ExerciseFilterParams]=None,org_i
 
         if params.primary_joint:
             primary_joint_query = primary_joint_query.filter(_models.ExercisePrimaryJoint.primary_joint_id.in_(params.primary_joint))
-            
+
+        if params.search_key:
+            search_pattern = f"%{params.search_key}%"
+            query = query.filter(Exercise.exercise_name.ilike(search_pattern))
+
+        if params.category:
+            query = query.filter(Exercise.category_id == params.category)    
         
     equipment_query=equipment_query.subquery()
     primary_muscle_query=primary_muscle_query.subquery()
     primary_joint_query=primary_joint_query.subquery()
-
+    filtered_exercise_query = query.subquery('filtered_exercise')
+    
     query = db.query(
-    Exercise.exercise_name,
-    Exercise.visible_for,
-    Exercise.org_id,
-    Exercise.exercise_type,
-    Exercise.exercise_intensity,
-    Exercise.intensity_value,
-    Exercise.difficulty,
-    Exercise.sets,
-    Exercise.seconds_per_set,
-    Exercise.repetitions_per_set,
-    Exercise.rest_between_set,
-    Exercise.distance,
-    Exercise.speed,
-    Exercise.met_id,
-    Exercise.gif_url,
-    Exercise.video_url_male,
-    Exercise.video_url_female,
-    Exercise.thumbnail_male,
-    Exercise.thumbnail_female,
-    Exercise.image_url_female,
-    Exercise.image_url_male,
-    Exercise.id,
-    Exercise.category_id,
-    _models.ExerciseCategory.category_name,
-    equipment_query.c.equipments,
-    primary_muscle_query.c.primary_muscles,
-    secondary_muscle_query.c.secondary_muscles,
-    primary_joint_query.c.primary_joints
-    ).select_from(Exercise).join(
-    equipment_query, Exercise.id == equipment_query.c.exercise_id
-    ).join(_models.ExerciseCategory,Exercise.category_id == _models.ExerciseCategory.id).join(
-    primary_muscle_query, Exercise.id == primary_muscle_query.c.exercise_id
+        filtered_exercise_query.c.exercise_name,
+        filtered_exercise_query.c.visible_for,
+        filtered_exercise_query.c.org_id,
+        filtered_exercise_query.c.exercise_type,
+        filtered_exercise_query.c.exercise_intensity,
+        filtered_exercise_query.c.intensity_value,
+        filtered_exercise_query.c.difficulty,
+        filtered_exercise_query.c.sets,
+        filtered_exercise_query.c.seconds_per_set,
+        filtered_exercise_query.c.repetitions_per_set,
+        filtered_exercise_query.c.rest_between_set,
+        filtered_exercise_query.c.distance,
+        filtered_exercise_query.c.speed,
+        filtered_exercise_query.c.met_id,
+        filtered_exercise_query.c.gif_url,
+        filtered_exercise_query.c.video_url_male,
+        filtered_exercise_query.c.video_url_female,
+        filtered_exercise_query.c.thumbnail_male,
+        filtered_exercise_query.c.thumbnail_female,
+        filtered_exercise_query.c.image_url_female,
+        filtered_exercise_query.c.image_url_male,
+        filtered_exercise_query.c.id,
+        filtered_exercise_query.c.category_id,
+        filtered_exercise_query.c.created_at,
+        _models.ExerciseCategory.category_name,
+        equipment_query.c.equipments,
+        primary_muscle_query.c.primary_muscles,
+        secondary_muscle_query.c.secondary_muscles,
+        primary_joint_query.c.primary_joints
     ).join(
-    secondary_muscle_query, Exercise.id == secondary_muscle_query.c.exercise_id
+        equipment_query, filtered_exercise_query.c.id == equipment_query.c.exercise_id
     ).join(
-    primary_joint_query, Exercise.id == primary_joint_query.c.exercise_id).filter(
-    Exercise.is_deleted == False)
-    
+        _models.ExerciseCategory, filtered_exercise_query.c.category_id == _models.ExerciseCategory.id
+    ).join(
+        primary_muscle_query, filtered_exercise_query.c.id == primary_muscle_query.c.exercise_id
+    ).join(
+        secondary_muscle_query, filtered_exercise_query.c.id == secondary_muscle_query.c.exercise_id
+    ).join(
+        primary_joint_query, filtered_exercise_query.c.id == primary_joint_query.c.exercise_id
+    )
+ 
     if id:
-        query=query.filter(Exercise.id == id)
+        query = query.filter(filtered_exercise_query.c.id == id)
         return query.first()
-    
-    else:
-        query=query.filter(Exercise.org_id == org_id)
-    
-        total_count_query=db.query(Exercise.id).filter(and_(Exercise.is_deleted == False,Exercise.org_id == org_id))
-        total_counts = db.query(func.count()).select_from(total_count_query).scalar()
 
-        if params.search_key:
-            search_pattern = f"%{params.search_key}%"
-            query = query.filter(or_(
-                _models.Exercise.exercise_name.ilike(search_pattern)))
-            
-        if params.category:
-            query = query.filter(_models.ExerciseCategory.id == params.category)
-            
-        filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()
-        
-        if params.sort_key in sort_mapping.keys():       
-            sort_order = desc(sort_mapping.get(params.sort_key)) if params.sort_order == "desc" else asc(sort_mapping.get(params.sort_key))
-            query=query.order_by(sort_order)
-            
-        elif params.sort_key is not None:
-            raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
-       
-        query = query.offset(params.offset).limit(params.limit)
-        
-        db_exercise=query.all()
-        
-        exercise_data = [_schemas.ExerciseRead.from_orm(exercise) for exercise in db_exercise]
-        
-        return {'data': exercise_data, 'total_counts': total_counts, 'filtered_counts': filtered_counts}
+    total_count_query = db.query(Exercise.id).filter(and_(Exercise.is_deleted == False,Exercise.org_id == org_id))
+    total_counts = db.query(func.count()).select_from(total_count_query.subquery()).scalar()
+    
+    filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()
+
+    if params.sort_key in sort_mapping.keys():
+        sort_order = desc(sort_mapping.get(params.sort_key)) if params.sort_order == "desc" else asc(sort_mapping.get(params.sort_key))
+        query = query.order_by(sort_order)
+    elif params.sort_key is not None:
+        raise _fastapi.HTTPException(status_code=400, detail="Sorting column not found.")
+    
+    query = query.offset(params.offset).limit(params.limit)
+    
+    db_exercise = query.all()
+    exercise_data = [_schemas.ExerciseRead.from_orm(exercise) for exercise in db_exercise]
+    return {'data': exercise_data, 'total_counts': total_counts, 'filtered_counts': filtered_counts}
+
+
         
     
     
