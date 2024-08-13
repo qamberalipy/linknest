@@ -269,10 +269,10 @@ async def get_exercise(
     db: _orm.Session = _fastapi.Depends(get_db)
 ):
     sort_mapping = {
-        "exercise_name": text("exercise_1.exercise_name"),
+        "exercise_name": text("filtered_exercise.exercise_name"),
         "category_name": text("exercise_category.category_name"),
-        "visible_for": text("exercise_1.visible_for"),
-        "created_at": text("exercise_1.created_at")
+        "visible_for": text("filtered_exercise.visible_for"),
+        "created_at": text("filtered_exercise.created_at")
     }
     
     PrimaryMuscle = aliased(_models.Muscle)
@@ -280,7 +280,7 @@ async def get_exercise(
     PrimaryJoint = aliased(_models.PrimaryJoint)
     Equipment = aliased(_models.Equipment)
     Exercise = aliased(_models.Exercise)
-
+    
     if id:
         check_exercise = db.query(Exercise).filter(Exercise.id == id).first()
         if not check_exercise:
@@ -296,18 +296,6 @@ async def get_exercise(
     if org_id:
         query = query.filter(Exercise.org_id == org_id)
 
-    if params and params.search_key:
-        search_pattern = f"%{params.search_key}%"
-        query = query.filter(Exercise.exercise_name.ilike(search_pattern))
-
-    # Apply additional filters
-    if params and params.category:
-        query = query.filter(Exercise.category_id == params.category)
-
-    # Subquery the filtered Exercise query to use in joins
-    filtered_exercise_query = query.subquery()
-
-    # Aggregate queries for equipment, primary muscle, secondary muscle, and primary joint
     equipment_query = db.query(
         _models.ExerciseEquipment.exercise_id,
         func.json_agg(
@@ -315,7 +303,7 @@ async def get_exercise(
         ).label('equipments')
     ).join(
         Equipment, _models.ExerciseEquipment.equipment_id == Equipment.id
-    ).group_by(_models.ExerciseEquipment.exercise_id).subquery()
+    ).group_by(_models.ExerciseEquipment.exercise_id)
 
     primary_muscle_query = db.query(
         _models.ExercisePrimaryMuscle.exercise_id,
@@ -324,7 +312,7 @@ async def get_exercise(
         ).label('primary_muscles')
     ).join(
         PrimaryMuscle, _models.ExercisePrimaryMuscle.muscle_id == PrimaryMuscle.id
-    ).group_by(_models.ExercisePrimaryMuscle.exercise_id).subquery()
+    ).group_by(_models.ExercisePrimaryMuscle.exercise_id)
 
     secondary_muscle_query = db.query(
         _models.ExerciseSecondaryMuscle.exercise_id,
@@ -342,9 +330,30 @@ async def get_exercise(
         ).label('primary_joints')
     ).join(
         PrimaryJoint, _models.ExercisePrimaryJoint.primary_joint_id == PrimaryJoint.id
-    ).group_by(_models.ExercisePrimaryJoint.exercise_id).subquery()
+    ).group_by(_models.ExercisePrimaryJoint.exercise_id)
 
-    # Final main query with joins
+    if params:
+        if params.equipment:
+            equipment_query = equipment_query.filter(_models.ExerciseEquipment.equipment_id.in_(params.equipment))
+
+        if params.primary_muscle:
+            primary_muscle_query = primary_muscle_query.filter(_models.ExercisePrimaryMuscle.muscle_id.in_(params.primary_muscle))
+
+        if params.primary_joint:
+            primary_joint_query = primary_joint_query.filter(_models.ExercisePrimaryJoint.primary_joint_id.in_(params.primary_joint))
+
+        if params.search_key:
+            search_pattern = f"%{params.search_key}%"
+            query = query.filter(Exercise.exercise_name.ilike(search_pattern))
+
+        if params.category:
+            query = query.filter(Exercise.category_id == params.category)    
+        
+    equipment_query=equipment_query.subquery()
+    primary_muscle_query=primary_muscle_query.subquery()
+    primary_joint_query=primary_joint_query.subquery()
+    filtered_exercise_query = query.subquery('filtered_exercise')
+    
     query = db.query(
         filtered_exercise_query.c.exercise_name,
         filtered_exercise_query.c.visible_for,
@@ -369,6 +378,7 @@ async def get_exercise(
         filtered_exercise_query.c.image_url_male,
         filtered_exercise_query.c.id,
         filtered_exercise_query.c.category_id,
+        filtered_exercise_query.c.created_at,
         _models.ExerciseCategory.category_name,
         equipment_query.c.equipments,
         primary_muscle_query.c.primary_muscles,
@@ -385,9 +395,7 @@ async def get_exercise(
     ).join(
         primary_joint_query, filtered_exercise_query.c.id == primary_joint_query.c.exercise_id
     )
-
-    print("This is query",query)
-
+ 
     if id:
         query = query.filter(filtered_exercise_query.c.id == id)
         return query.first()
@@ -408,6 +416,7 @@ async def get_exercise(
     db_exercise = query.all()
     exercise_data = [_schemas.ExerciseRead.from_orm(exercise) for exercise in db_exercise]
     return {'data': exercise_data, 'total_counts': total_counts, 'filtered_counts': filtered_counts}
+
 
         
     
