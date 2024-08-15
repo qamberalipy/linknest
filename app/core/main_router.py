@@ -61,6 +61,8 @@ async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(ge
 
 @router.post("/login")
 async def login(user: _schemas.GenerateUserToken,db: _orm.Session = Depends(get_db)):
+    if not _helpers.validate_email(user.email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
     
     print("user: ",user,"lockout_expiry: ",lockout_expiry,"login_attempts: ",login_attempts)
     if user.email in lockout_expiry and datetime.datetime.now() < lockout_expiry[user.email]:
@@ -115,6 +117,9 @@ async def read_sources(db: _orm.Session = Depends(get_db)):
 @router.post("/app/member/signup", response_model=ClientLoginResponse, tags=["App Router"])
 async def register_mobileclient(client: ClientCreateApp, db: _orm.Session = Depends(get_db)):
     try:
+        if not _helpers.validate_email(client.email):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        
         db_client = await _client_service.get_client_by_email(client.email, db)
        
         if db_client:
@@ -196,15 +201,22 @@ async def register_mobileclient(client: ClientCreateApp, db: _orm.Session = Depe
 @router.post("/app/member/login", response_model=ClientLoginResponse,  tags=["App Router"])
 async def login_client(client_data: ClientLogin, db: _orm.Session = Depends(get_db)):
     try:
+      if not _helpers.validate_email(client_data.email_address):
+        raise HTTPException(status_code=400, detail="Invalid email format")
       result = await _client_service.login_client(client_data.email_address, client_data.wallet_address, db)
       print("result",result)
       return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"IntegrityError: {e}")
+        raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
+      
 @router.post("/app/coach/signup", response_model=CoachLoginResponse,tags=["App Router"])
 async def create_mobilecoach(coach: CoachAppBase, db: _orm.Session = Depends(get_db)):
     try:
+        if not _helpers.validate_email(coach.email):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+      
         db_coach =  await _coach_service.get_coach_by_email(coach.email, db)
         print("MY COACH",db_coach)
         if db_coach:
@@ -235,7 +247,14 @@ async def create_mobilecoach(coach: CoachAppBase, db: _orm.Session = Depends(get
 @router.post("/app/coach/login", response_model=CoachLoginResponse,  tags=["App Router"])
 async def login_coach(coach_data: CoachLogin, db: _orm.Session = Depends(get_db)):
     try:
+        if not _helpers.validate_email(coach_data.email_address):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+      
         result = await _coach_service.login_coach(coach_data.email_address, coach_data.wallet_address, db)
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+   
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"IntegrityError: {e}")
+        raise HTTPException(status_code=400, detail="Duplicate entry or integrity constraint violation")
+  

@@ -3,7 +3,8 @@ from typing import Annotated, Any, Dict
 from fastapi.exceptions import HTTPException
 import jwt, json, time, os, random, logging, bcrypt as _bcrypt
 import sqlalchemy.orm as _orm
-from sqlalchemy.sql import and_  
+from sqlalchemy.sql import and_ 
+import re 
 import email_validator as _email_check
 import fastapi as _fastapi
 import fastapi.security as _security
@@ -18,6 +19,13 @@ def create_token(payload: Dict[str, Any], persona: str):
     payload['user_type'] = persona.lower()
     access_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
     return dict(access_token=access_token,token_type="bearer")
+
+def validate_email(email: str) -> bool:
+    # Define the regex pattern for email validation
+    pattern = r"^(?=.{1,50}$)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    
+    # Match the email against the pattern
+    return bool(re.match(pattern, email))
 
 def verify_jwt(token: str, obj_type: str = "User"):
     # Verify a JWT token
