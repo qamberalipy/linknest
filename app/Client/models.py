@@ -74,7 +74,7 @@ class ClientOrganization(_database.Base):
     org_id = _sql.Column(_sql.Integer)
     client_status=_sql.Column(_sql.Enum(ClientStatus))
     created_at = _sql.Column(_sql.DateTime,default=datetime.now())
-    updated_at = _sql.Column(_sql.DateTime,default=datetime.now(),on_update=datetime.now())
+    updated_at = _sql.Column(_sql.DateTime,default=datetime.now())
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     
     
@@ -84,6 +84,6 @@ class ClientCoach(_database.Base):
     client_id = _sql.Column(_sql.Integer)
     coach_id = _sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime,default=datetime.now())
-    updated_at = _sql.Column(_sql.DateTime,default=datetime.now(),on_update=datetime.now())
+    updated_at = _sql.Column(_sql.DateTime,default=datetime.now())
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     

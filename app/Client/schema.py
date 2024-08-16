@@ -193,6 +193,7 @@ class ClientByID(pydantic.BaseModel):
     business_name: Optional[str] = None
     coaches: Optional[List[Dict]] = []
     org_id: Optional[int] = None
+    client_status:Optional[ClientStatus]=None
     membership_plan_id: Optional[int] = None
     auto_renewal:Optional[bool]=None
     prolongation_period:Optional[int]	

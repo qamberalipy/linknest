@@ -572,6 +572,7 @@ async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientBy
     query = db.query(
             *_models.Client.__table__.columns,
             _models.ClientOrganization.org_id,
+            _models.ClientOrganization.client_status,
             _models.ClientMembership.membership_plan_id,
             _models.ClientMembership.auto_renewal,
             _models.ClientMembership.prolongation_period,	
@@ -600,7 +601,7 @@ async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientBy
             _models.Client.is_deleted == False
         ).group_by(
             _models.Client.id,
-            _models.ClientOrganization.org_id,
+            _models.ClientOrganization.id,
             _models.ClientMembership.id
         )
     

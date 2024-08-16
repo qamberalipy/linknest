@@ -372,7 +372,7 @@ async def get_categories(org_id,db: _orm.Session = Depends(get_db)):
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
-@router.get("/membership_plan/list/{org_id}", response_model=List[_schemas.data_list],tags=["Membership Plans"])
+@router.get("/membership_plan/list/{org_id}", response_model=List[_schemas.data_list_membership_plan],tags=["Membership Plans"])
 async def get_membership_plan(org_id,db: _orm.Session = Depends(get_db)):
     try:
             

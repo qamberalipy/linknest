@@ -87,6 +87,12 @@ class data_list(pydantic.BaseModel):
     id:Optional[int]=None    
     name:Optional[str]=None
 
+class data_list_membership_plan(pydantic.BaseModel):
+    id:int    
+    name:str
+    auto_renewal:bool
+    renewal_details:dict
+
 class data_list_facilities(pydantic.BaseModel):
     id:Optional[int]=None    
     name:Optional[str]=None
