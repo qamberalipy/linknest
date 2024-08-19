@@ -35,11 +35,11 @@ LOCKOUT_TIME = datetime.timedelta(minutes=30)
 def healthcheck():
     return JSONResponse(content=jsonable_encoder({"status": "Healthy yayy!"}))
 
-@router.post("/token-refresh", tags=["Auth"])
-async def refresh_token(refresh_token: str = Header(..., alias="refresh_token")):
+@router.post("/refresh_token", tags=["Auth"])
+async def refresh_token(token_body:_schemas.verify_token):
  
-    print("This is my refresh token:", refresh_token)
-    return _helpers.refresh_jwt(refresh_token)
+    print("This is my refresh token:", token_body.token)
+    return _helpers.refresh_jwt(token_body.token)
 
 @router.post("/register/admin")
 async def register_user(user: _schemas.UserCreate, db: _orm.Session = Depends(get_db)):
