@@ -14,6 +14,7 @@ class FoodBase(pydantic.BaseModel):
     category: str
     description: Optional[str] = None
     img_url:Optional[str]=None
+    is_validated:Optional[bool]=False
     other_name: Optional[str] = None
     total_nutrition: float
     kcal: float
@@ -78,6 +79,7 @@ class FoodUpdate(pydantic.BaseModel):
     brand: Optional[str] = None
     category: Optional[str] = None
     description: Optional[str] = None
+    is_validated:Optional[bool]=False
     img_url:Optional[str]=None
     other_name: Optional[str] = None
     total_nutrition: Optional[float] = None
