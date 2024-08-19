@@ -45,6 +45,7 @@ class Food(_database.Base):
     description = _sql.Column(_sql.String)
     img_url=_sql.Column(_sql.String)
     visible_for = _sql.Column(_sql.Enum(FoodVisibleFor))
+    is_validated=_sql.Column(_sql.Boolean,default=False)
     other_name = _sql.Column(_sql.String)
     total_nutrition = _sql.Column(_sql.Float)
     kcal = _sql.Column(_sql.Float)
