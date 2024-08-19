@@ -1,5 +1,6 @@
 import datetime
 from typing import Dict, List
+from urllib import request
 from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -34,8 +35,10 @@ LOCKOUT_TIME = datetime.timedelta(minutes=30)
 def healthcheck():
     return JSONResponse(content=jsonable_encoder({"status": "Healthy yayy!"}))
 
-@router.post("/refresh_token", tags=["Auth"])
-async def refresh_token(refresh_token: str = Header(None, alias="refresh_token")):
+@router.post("/token-refresh", tags=["Auth"])
+async def refresh_token(refresh_token: str = Header(..., alias="refresh_token")):
+ 
+    print("This is my refresh token:", refresh_token)
     return _helpers.refresh_jwt(refresh_token)
 
 @router.post("/register/admin")
