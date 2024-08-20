@@ -38,6 +38,7 @@ SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 SMTP_PORT = os.getenv("SMTP_PORT")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 
+
 oauth2schema = _security.OAuth2PasswordBearer(tokenUrl="api/login")
 def create_database():
     # Create database tables
