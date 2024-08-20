@@ -184,7 +184,7 @@ class ClientByID(pydantic.BaseModel):
     activated_on: Optional[datetime.date] = None
     check_in: Optional[datetime.datetime] = None
     last_online: Optional[datetime.datetime] = None
-    client_since: datetime.date
+    client_since:Optional[datetime.date]
     created_at: Optional[datetime.datetime] = None
     updated_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
