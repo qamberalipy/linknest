@@ -167,7 +167,7 @@ def create_member_meal_plan(meal_plan_id : int, member_ids: List[int], db: _orm.
 
     return member_meal_plans
 
-def update_meal_plan(meal_plan_id: int, meal_plan: _schemas.UpdateMealPlan, db: _orm.Session):
+def update_meal_plan(meal_plan_id: int,user_id,meal_plan: _schemas.UpdateMealPlan, db: _orm.Session):
     try:
         # Retrieve the existing meal plan
         db_meal_plan = db.query(_models.MealPlan).filter(_models.MealPlan.id == meal_plan_id, 
@@ -236,6 +236,8 @@ def update_meal_plan(meal_plan_id: int, meal_plan: _schemas.UpdateMealPlan, db: 
                     member_id=member_id
                 ) for member_id in members_to_add])
 
+        db_meal_plan.updated_by=user_id
+        db_meal_plan.updated_at=datetime.now()
         db.commit()
         db.refresh(db_meal_plan)
         return db_meal_plan
@@ -245,10 +247,12 @@ def update_meal_plan(meal_plan_id: int, meal_plan: _schemas.UpdateMealPlan, db: 
     finally:
         db.close()
 
-def delete_meal_plan(meal_plan_id: int,  db: _orm.Session = _fastapi.Depends(get_db)):
+def delete_meal_plan(meal_plan_id: int,user_id,db: _orm.Session = _fastapi.Depends(get_db)):
     db_meal_plan = db.query(_models.MealPlan).filter(_models.MealPlan.id == meal_plan_id).first()
     if db_meal_plan:
         db_meal_plan.is_deleted = True
+        db_meal_plan.updated_by=user_id
+        db_meal_plan.updated_at=datetime.now()
         db.commit()
         db.refresh(db_meal_plan)
     return db_meal_plan
