@@ -78,7 +78,12 @@ def hash_password(password):
 async def get_user_by_email(email: str, db: _orm.Session):
     # Retrieve a user by email from the database
     print("Email: ", email)
-    return db.query(_models.User).filter(_models.User.email == email).first()
+    return db.query(_models.User).filter(
+        and_(
+            _models.User.email == email,
+            _models.User.is_deleted == False
+        )
+    ).first()
 
 async def create_organization(org: _schemas.OrganizationCreate,user_id,db: _orm.Session) -> models.Organization:
     org=org.dict()
