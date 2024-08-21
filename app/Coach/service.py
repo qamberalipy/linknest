@@ -530,7 +530,7 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
         BankDetail.swift_code,
-        func.array_agg(ClientCoach.client_id).label('members')
+        func.array_agg(func.coalesce(ClientCoach.client_id, 0)).label('members')
     ).select_from(_models.Coach).join(
         CoachOrg, _models.Coach.id == CoachOrg.coach_id
     ).outerjoin(
