@@ -55,9 +55,10 @@ async def get_meal_plans(id:int , db: _orm.Session = Depends(get_db)):
 
 
 @router.put("/meal_plans", response_model=_schemas.ReadMealPlan)
-async def update_meal_plan(meal_plan: _schemas.UpdateMealPlan, db: _orm.Session = Depends(get_db)):
+async def update_meal_plan(meal_plan: _schemas.UpdateMealPlan,request:Request,db: _orm.Session = Depends(get_db)):
     try:
-        updated_meal_plan = _service.update_meal_plan(meal_plan.id, meal_plan, db)
+        user_id=request.state.user.get('id')
+        updated_meal_plan = _service.update_meal_plan(meal_plan.id,user_id,meal_plan, db)
         
         if updated_meal_plan is None:
             raise HTTPException(status_code=404, detail="Meal plan not found")
