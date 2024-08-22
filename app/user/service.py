@@ -484,6 +484,22 @@ def send_password_reset_email(recipient_email: str, subject: str, html_body: str
         print(f"Failed to send email: {str(e)}")
         return False
 
+def set_reset_token(id: int, email: str, token: str, db: _orm.Session):
+    db.query(_models.User).filter(_models.User.id == id).filter(_models.User.email == email).update({"reset_token": token})
+    db.commit()
+    return token
+
+def get_reset_token(id: int, db: _orm.Session):
+    user = db.query(_models.User).filter(_models.User.id == id, _models.User.reset_token.isnot(None)).first()
+    if user is None:
+        return None
+
+    return user.reset_token
+
+def delete_reset_token(id: int, db: _orm.Session):
+    db.query(_models.User).filter(_models.User.id == id).update({"reset_token": None})
+    db.commit()
+
 def get_all_countries( db: _orm.Session):
     return db.query(_models.Country).filter(_models.Country.is_deleted == False).all()
 
