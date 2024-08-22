@@ -14,7 +14,6 @@ class Coach(_database.Base):
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     wallet_address = _sql.Column(_sql.String)
-    own_coach_id = _sql.Column(_sql.String, nullable=True)
     profile_img = _sql.Column(_sql.String(150))
     first_name = _sql.Column(_sql.String, nullable=True)
     last_name = _sql.Column(_sql.String, nullable=True)
@@ -31,9 +30,7 @@ class Coach(_database.Base):
     zipcode = _sql.Column(_sql.String(10))
     address_1 = _sql.Column(_sql.String(100))
     address_2 = _sql.Column(_sql.String(100))
-    check_in = _sql.Column(_sql.DateTime)
     last_online = _sql.Column(_sql.DateTime)
-    coach_since = _sql.Column(_sql.DateTime, nullable=True, default=_dt.datetime.now)
     bank_detail_id = _sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime)
     updated_at = _sql.Column(_sql.DateTime)
@@ -45,6 +42,8 @@ class CoachOrganization(_database.Base):
     __tablename__ = "coach_organization"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     coach_id = _sql.Column(_sql.Integer)
+    check_in = _sql.Column(_sql.DateTime)
+    own_coach_id = _sql.Column(_sql.String, nullable=True)
     org_id = _sql.Column(_sql.Integer)
     coach_status = _sql.Column(_sql.Enum(CoachStatus))
     is_deleted = _sql.Column(_sql.Boolean, default=False)

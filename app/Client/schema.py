@@ -6,7 +6,6 @@ from app.Client.models import ClientStatus
 
 class ClientBase(pydantic.BaseModel):
     profile_img: Optional[str] = None
-    own_member_id: str  
     first_name: str
     last_name: str
     gender: str
@@ -30,7 +29,6 @@ class ClientBase(pydantic.BaseModel):
     circumference_waist_navel: Optional[float]=0.0
     fat_percentage: Optional[float]=0.0
     muscle_percentage: Optional[float]=0.0
-    client_since: Optional[datetime.date] = None
 
 
 class ClientCreate(ClientBase):
@@ -38,11 +36,13 @@ class ClientCreate(ClientBase):
     coach_id: Optional[List[int]] = []
     membership_plan_id: int
     client_status: ClientStatus="active"  # Corrected type annotation
+    own_member_id: str  
     send_invitation: bool
     auto_renewal:bool=False
     prolongation_period:Optional[int] = None
     auto_renew_days:Optional[int] = None
     inv_days_cycle:Optional[int] = None
+    is_deleted:Optional[bool] = False
     class Config:
         from_attributes = True
         
@@ -59,12 +59,10 @@ class ClientCreateApp(pydantic.BaseModel):
     circumference_waist_navel:Optional[float]=0.0
     fat_percentage:Optional[float]=0.0
     muscle_percentage:Optional[float]=0.0
-    client_since: Optional[datetime.date] = None
     notes: Optional[str] = None
     is_business: Optional[bool] = False
     country_id: Optional[int] = None
     zipcode: Optional[str] = None
-    client_since: Optional[datetime.date] = None
     org_id: Optional[int] = 0
     coach_id: Optional[int] = 0
     status: Optional[str] = "pending"
@@ -85,12 +83,10 @@ class RegisterClientApp(pydantic.BaseModel):
     circumference_waist_navel:Optional[float]=0.0
     fat_percentage:Optional[float]=0.0
     muscle_percentage:Optional[float]=0.0
-    client_since: Optional[datetime.date] = None
     notes: Optional[str] = None
     is_business: Optional[bool] = False
     country_id: Optional[int] = None
-    zipcode: Optional[str] = None
-    client_since: Optional[datetime.date] = None 
+    zipcode: Optional[str] = None 
     is_deleted:Optional[bool]=False
     
         
@@ -142,7 +138,6 @@ class ClientAPPBase(pydantic.BaseModel):
     muscle_percentage: Optional[float]=0.0
     coach_id: Optional[List[int]]=[]
     organizations:Optional[List[ClientOrganizationResponse]]=[]
-    client_since: Optional[datetime.date] = None
     created_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
         
@@ -182,7 +177,6 @@ class ClientByID(pydantic.BaseModel):
     activated_on: Optional[datetime.date] = None
     check_in: Optional[datetime.datetime] = None
     last_online: Optional[datetime.datetime] = None
-    client_since:Optional[datetime.date]
     created_at: Optional[datetime.datetime] = None
     updated_at: Optional[datetime.datetime] = None
     created_by: Optional[int] = None
@@ -205,6 +199,7 @@ class ClientOrganization(pydantic.BaseModel):
     client_id: int
     org_id: int
     client_status:ClientStatus
+    own_member_id: str
 
 class CreateClientOrganization(ClientOrganization):
     pass
@@ -295,7 +290,6 @@ class ClientFilterRead(pydantic.BaseModel):
     mobile_number: Optional[str]
     check_in: Optional[datetime.datetime]
     last_online: Optional[datetime.datetime]
-    client_since: Optional[datetime.date]
     business_name: Optional[str]
     coaches: Optional[List[Dict]] = []
     activated_on: Optional[datetime.date] = None
@@ -326,7 +320,6 @@ class ClientDelete(pydantic.BaseModel):
 class ClientUpdate(pydantic.BaseModel):
     id : int
     profile_img: Optional[str] = None
-    own_member_id: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     gender: Optional[str] = None
@@ -348,7 +341,6 @@ class ClientUpdate(pydantic.BaseModel):
     zipcode: Optional[str] = None
     address_1: Optional[str] = None
     address_2: Optional[str] = None
-    client_since: Optional[datetime.date] = None
     height:Optional[float]=0.0 
     weight:Optional[float]=0.0 
     bmi:Optional[float]=0.0     

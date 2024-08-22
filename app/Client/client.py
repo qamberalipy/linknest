@@ -31,41 +31,95 @@ def get_db():
     finally:
         db.close()
         
-@router.post("/member",response_model=SharedCreateSchema, tags=["Member Router"])
-async def register_client(client: _schemas.ClientCreate,request:Request,db: _orm.Session = Depends(get_db)):
+@router.post("/member", response_model=SharedCreateSchema, tags=["Member Router"])
+async def register_client(
+    client: _schemas.ClientCreate, 
+    request: Request, 
+    db: _orm.Session = Depends(get_db)
+):
     try:
         if not _helpers.validate_email(client.email):
             raise HTTPException(status_code=400, detail="Invalid email format")
-        user_id=request.state.user.get('id')
-        db_client = await _services.get_client_by_email(client.email, db)
-        if db_client:
-            raise HTTPException(status_code=400, detail="Email already registered")
-
+        
+        user_id = request.state.user.get('id')
         client_data = client.dict()
+        
+        # Extracting fields from client_data
         organization_id = client_data.pop('org_id')
         status = client_data.pop('client_status')
         coach_ids = client_data.pop('coach_id', [])
         membership_id = client_data.pop('membership_plan_id')
-        prolongation_period=client_data.pop('prolongation_period')
-        auto_renew_days=client_data.pop('auto_renew_days')
-        inv_days_cycle=client_data.pop('inv_days_cycle')
-        auto_renewal=client_data.pop('auto_renewal')
-        client_data['created_by']=user_id
-        client_data['updated_by']=user_id
-        client_data['created_at']=datetime.datetime.now()
-        client_data['updated_at']=datetime.datetime.now()
+        prolongation_period = client_data.pop('prolongation_period')
+        auto_renew_days = client_data.pop('auto_renew_days')
+        inv_days_cycle = client_data.pop('inv_days_cycle')
+        auto_renewal = client_data.pop('auto_renewal')
+        own_member_id = client_data.pop('own_member_id')
+        
+        # Setting audit fields
+        client_data.update({
+            'created_by': user_id,
+            'updated_by': user_id,
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now(),
+        })
 
+        # Check if client already exists
+        db_client = await _services.get_client_by_email(client.email, db)
+        
+        if db_client:
+            if organization_id in db_client.org_ids:
+                logger.info("Client exists within the same organization")
+                raise HTTPException(status_code=400, detail="Email already registered")
+            else:
+                logger.info("Client does not exist within the same organization")
+                updated_client = await _services.update_app_client(db_client.id, client, db)
+                
+                # Create new associations for the existing client
+                await _services.create_client_organization(
+                    _schemas.CreateClientOrganization(
+                        client_id=updated_client.id, org_id=organization_id, 
+                        client_status=status, own_member_id=own_member_id
+                    ), db
+                )
+
+                await _services.create_client_membership(
+                    _schemas.CreateClientMembership(
+                        client_id=updated_client.id, membership_plan_id=membership_id,
+                        auto_renewal=auto_renewal, prolongation_period=prolongation_period, 
+                        auto_renew_days=auto_renew_days, inv_days_cycle=inv_days_cycle
+                    ), db
+                )
+
+                if coach_ids:
+                    await _services.create_client_coach(updated_client.id, coach_ids, db)
+
+                return {
+                    "status_code": "201",
+                    "id": updated_client.id,
+                    "message": "Member created successfully"
+                }
+
+        # If client does not exist, create a new one
+        logger.info("Creating a new client")
         new_client = await _services.create_client(_schemas.RegisterClient(**client_data), db)
         
+        # Create associations for the new client
         await _services.create_client_organization(
-            _schemas.CreateClientOrganization(client_id=new_client.id, org_id=organization_id, client_status=status), db
+                    _schemas.CreateClientOrganization(
+                        client_id=new_client.id, org_id=organization_id, 
+                        client_status=status, own_member_id=own_member_id
+                    ), db
         )
 
         await _services.create_client_membership(
-            _schemas.CreateClientMembership(client_id=new_client.id, membership_plan_id=membership_id,auto_renewal=auto_renewal,prolongation_period=prolongation_period,auto_renew_days=auto_renew_days,inv_days_cycle=inv_days_cycle), db
+            _schemas.CreateClientMembership(
+                client_id=new_client.id, membership_plan_id=membership_id,
+                auto_renewal=auto_renewal, prolongation_period=prolongation_period, 
+                auto_renew_days=auto_renew_days, inv_days_cycle=inv_days_cycle
+            ), db
         )
 
-        if coach_ids is not None:
+        if coach_ids:
             await _services.create_client_coach(new_client.id, coach_ids, db)
 
         return {
@@ -83,6 +137,7 @@ async def register_client(client: _schemas.ClientCreate,request:Request,db: _orm
         db.rollback()
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+
 
 
     
@@ -121,10 +176,10 @@ async def update_client(client: _schemas.ClientUpdate,request:Request, db: _orm.
     
 
 @router.delete("/member/{id}",response_model=SharedModifySchema, tags=["Member Router"])
-async def delete_client(id:int,request:Request,db: _orm.Session = Depends(get_db)):
+async def delete_client(id:int,org_id: Annotated[int, Query(title="Organization id")],request:Request,db: _orm.Session = Depends(get_db)):
     try:
-        user_id=request.state.user.get('id')
-        deleted_client = await _services.delete_client(id,user_id,db)
+        # user_id=request.state.user.get('id')
+        deleted_client = await _services.delete_client(id,org_id,db)
         return deleted_client
 
     except IntegrityError as e:
@@ -138,9 +193,9 @@ async def delete_client(id:int,request:Request,db: _orm.Session = Depends(get_db
         raise HTTPException(status_code = 400, detail="Data error occurred, check your input")
 
 @router.get("/member/{id}", response_model=_schemas.ClientByID, tags=["Member Router"])
-async def get_client_by_id(id: int, db:  _orm.Session = Depends(get_db)):
+async def get_client_by_id(id: int,org_id: Annotated[int, Query(title="Organization id")], db:  _orm.Session = Depends(get_db)):
     try:    
-        client = await _services.get_client_byid(db=db, client_id=id)
+        client = await _services.get_client_byid(db=db, client_id=id,org_id=org_id)
         if not client:
             raise HTTPException(status_code=404, detail="Client not found")
         return client    
