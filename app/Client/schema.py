@@ -37,7 +37,7 @@ class ClientCreate(ClientBase):
     org_id: int
     coach_id: Optional[List[int]] = []
     membership_plan_id: int
-    client_status: ClientStatus="active"  # Corrected type annotation
+    client_status: ClientStatus="pending"  
     send_invitation: bool
     auto_renewal:bool=False
     prolongation_period:Optional[int] = None
