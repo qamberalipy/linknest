@@ -7,22 +7,22 @@ from enum import Enum as PyEnum
 from datetime import datetime
 
 
-class Intensity(PyEnum):
+class Intensity(str,PyEnum):
     irm='irm'
     max_intensity='Max Intensity'
 
-class Difficulty(PyEnum):
+class Difficulty(str,PyEnum):
     Novice='Novice'
     Beginner='Beginner'
     Intermediate='Intermediate'
     Advance='Advance'
     Expert='Expert'
 
-class ExerciseType(PyEnum):
+class ExerciseType(str,PyEnum):
     time_based = 'Time Based'
     repetition_based = 'Repetition Based'
 
-class VisibleFor(PyEnum):
+class VisibleFor(str,PyEnum):
     only_myself = 'Only Myself'
     staff_of_my_club = 'Staff of My Club'
     members_of_my_club = 'Members of My Club'
