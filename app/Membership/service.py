@@ -286,7 +286,7 @@ def get_membership_plans_by_org_id(
         query = query.filter(_models.MembershipPlan.total_price >= params.total_amount)  
     
     if params.status:
-        query = query.filter(_models.MembershipPlan.status >= params.status)
+        query = query.filter(_models.MembershipPlan.status == params.status)
     
     filtered_counts = db.query(func.count()).select_from(query.subquery()).scalar()    
     

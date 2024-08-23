@@ -139,7 +139,7 @@ async def test_login_client():
 @pytest.mark.asyncio
 async def test_get_client_by_email():
     db = next(get_test_db())
-    email_address = "millwalamuhammad@gmail.com"
+    email_address = "shahzadfahad64@gmail.com"
     result = await get_client_by_email(email_address, db)
     assert result is not None
 
