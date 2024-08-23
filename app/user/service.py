@@ -26,6 +26,8 @@ import smtplib
 from email.mime.text import MIMEText
 from fastapi import APIRouter, Depends, HTTPException, Header
 from email.mime.multipart import MIMEMultipart
+import sendgrid
+from sendgrid.helpers.mail import Mail, Email, To, Content
 
 # Load environment variables
 
@@ -37,6 +39,7 @@ BASE_URL = os.getenv("BASE_URL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 SMTP_PORT = os.getenv("SMTP_PORT")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
+# SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 
 
 oauth2schema = _security.OAuth2PasswordBearer(tokenUrl="api/login")
@@ -483,6 +486,29 @@ def send_password_reset_email(recipient_email: str, subject: str, html_body: str
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         return False
+
+# def send_password_reset_email(recipient_email: str, subject: str, html_body: str) -> bool:
+#     sender_email = "letsmove.project2024@gmail.com"
+
+#     sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+#     from_email = Email(sender_email)
+#     to_email = To(recipient_email)
+#     content = Content("text/html", html_body)
+    
+#     mail = Mail(from_email, to_email, subject, content)
+
+#     try:
+#         # Send the email
+#         response = sg.send(mail)
+#         if response.status_code == 202:
+#             return True
+#         else:
+#             print(f"Failed to send email. Status code: {response.status_code}, Response body: {response.body}")
+#             return False
+#     except Exception as e:
+#         print(f"Failed to send email: {str(e)}")
+#         return False
+
 
 def set_reset_token(id: int, email: str, token: str, db: _orm.Session):
     db.query(_models.User).filter(_models.User.id == id).filter(_models.User.email == email).update({"reset_token": token})
