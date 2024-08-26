@@ -206,7 +206,7 @@ async def get_filtered_user_by_email(email: str, db: _orm.Session = _fastapi.Dep
     if user:
         return user
     else: 
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="It appears there is no account with this email. Please verify the address provided.")
 
 async def get_user_by_email_and_org(email: str, org_id: int,db: _orm.Session = _fastapi.Depends(get_db)):
     return db.query(models.User).filter(
@@ -245,7 +245,7 @@ async def get_alluser_data(email: str, db: _orm.Session = _fastapi.Depends(get_d
 async def update_user_password(user_id: int , org_id : int ,new_password : str, db: _orm.Session = _fastapi.Depends(get_db)):
     user = db.query(_models.User).filter(_models.User.id == user_id, _models.User.org_id == org_id, _models.User.is_deleted == False).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="It appears there is no account with this id. Please verify the details provided.")
     
     user.password = new_password
     db.commit()

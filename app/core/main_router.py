@@ -117,7 +117,7 @@ async def forget_password(staff : _schemas.ForgetPasswordRequest ,db: _orm.Sessi
     if not email_sent:
         raise HTTPException(status_code=500, detail="Failed to send email")
 
-    return JSONResponse(content={"message": "Password reset email sent successfully"}, status_code=200)
+    return JSONResponse(content={"message": f"An e-mail with a password reset link has been sent to {user.email}. If you did not receive the email, please check your spam/junk mail folder."}, status_code=200)
 
 @router.get("/reset_password/{token}")
 async def verify_token(token: str, db: _orm.Session = Depends(get_db)):
@@ -132,11 +132,12 @@ async def verify_token(token: str, db: _orm.Session = Depends(get_db)):
      
 @router.post("/reset_password")
 async def reset_password(user : _schemas.ResetPasswordRequest, db: _orm.Session = Depends(get_db)):
-
+    
     token = _services.get_reset_token(user.id, db)
     if token == user.token:
         data = _helpers.verify_password_reset_token(user.token)
-        if data is None:
+        
+        if data is None or any(key not in data for key in ["id","org_id"]):
             raise HTTPException(status_code=400, detail="The reset link is invalid or has expired. Please request a new password reset link.")
         
         if user.new_password != user.confirm_password:
@@ -147,8 +148,8 @@ async def reset_password(user : _schemas.ResetPasswordRequest, db: _orm.Session 
         user = await _services.update_user_password(user.id, user.org_id ,password, db)
         _services.delete_reset_token(user.id, db)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return JSONResponse(content={"message": "Password reset successfully"}, status_code=200)
+            raise HTTPException(status_code=404, detail="It appears there is no account with this id. Please verify the details provided.")
+        return JSONResponse(content={"message": "Your password has been reset successfully. You can now log in with your new password."}, status_code=200)
     else:
         raise HTTPException(status_code=400, detail="The reset link is invalid or has expired. Please request a new password reset link.")
 
