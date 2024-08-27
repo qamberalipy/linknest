@@ -31,7 +31,7 @@ async def create_meal_plan(meal_plan: _schemas.CreateMealPlan,request:Request,db
         new_meal_plan = _service.create_meal_plan(meal_plan,user_id,persona,db)
 
         _service.create_meal(new_meal_plan.id,meal_plan.meals, db)
-        _service.create_member_meal_plan(new_meal_plan.id, meal_plan.member_ids,db)
+        _service.create_member_meal_plan(new_meal_plan.id, meal_plan.member_id,db)
 
         return new_meal_plan
     except IntegrityError as e:
@@ -75,9 +75,10 @@ async def update_meal_plan(meal_plan: _schemas.UpdateMealPlan,request:Request,db
    
 
 @router.delete("/meal_plans/{id}", response_model=_schemas.ReadMealPlan)
-async def delete_meal_plan(id:int, db: _orm.Session = Depends(get_db)):
+async def delete_meal_plan(id:int, request:Request, db: _orm.Session = Depends(get_db)):
     try:
-        deleted_meal_plan = _service.delete_meal_plan(id, db)
+        user_id = request.state.user.get('id')
+        deleted_meal_plan = _service.delete_meal_plan(id, user_id, db)
         if deleted_meal_plan is None:
             raise HTTPException(status_code=404, detail="Meal plan not found")
         return deleted_meal_plan
