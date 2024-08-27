@@ -27,7 +27,7 @@ from email.mime.text import MIMEText
 from fastapi import APIRouter, Depends, HTTPException, Header
 from email.mime.multipart import MIMEMultipart
 import sendgrid
-import resend
+# import resend
 from sendgrid.helpers.mail import Mail, Email, To, Content
 
 # Load environment variables
