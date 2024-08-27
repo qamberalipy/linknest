@@ -21,12 +21,11 @@ class Difficulty(str,PyEnum):
 class ExerciseType(str,PyEnum):
     time_based = 'Time Based'
     repetition_based = 'Repetition Based'
-
 class VisibleFor(str,PyEnum):
     only_myself = 'Only Myself'
-    staff_of_my_club = 'Staff of My Club'
-    members_of_my_club = 'Members of My Club'
-    everyone_in_my_club = 'Everyone in My Club'
+    staff_of_my_club = 'Coaches Of My Gym'
+    members_of_my_club = 'Members Of My Gym'
+    everyone_in_my_club = 'Everyone In My Gym'
 
 class Exercise(_database.Base):
     __tablename__ = 'exercise'
