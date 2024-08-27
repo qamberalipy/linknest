@@ -106,7 +106,10 @@ async def exercise_update(data: _schemas.ExerciseUpdate, user_id,user_type,db: _
     secondary_muscles = None
     db_exercise = db.query(_models.Exercise).filter(_models.Exercise.id == data.id).first()
     
-    if db_exercise:
+    if not db_exercise:
+        raise _fastapi.HTTPException(status_code=404, detail="Exercise not found")
+        
+    else:
         update_data = data.dict(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_exercise, key, value)

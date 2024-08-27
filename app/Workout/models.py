@@ -4,18 +4,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..core.db import session as _database
 from datetime import datetime
 from enum import Enum as PyEnum
+from app.Exercise.models import ExerciseType,Intensity,VisibleFor
 
-class ExerciseType(PyEnum):
-    time_based = "Time Based"
-    repetition_based = "Repetition Based"
-
-class ExerciseIntensity(PyEnum):
-    max = "Max"
-    percentage_of_1rm = "% of 1RM"
-
-class ExerciseIntensity(PyEnum):
-    max = "Max"
-    percentage_of_1rm = "% of 1RM"
 
 class WorkoutGoal(PyEnum):
     lose_weight = "Lose Weight"
@@ -33,27 +23,18 @@ class WorkoutLevel(PyEnum):
     advanced = "Advanced"
     expert = "Expert"
 
-class VisibleFor(PyEnum):
-    only_myself = 'Only Myself'
-    staff_of_my_club = 'Staff of My Club'
-    members_of_my_club = 'Members of My Club'
-    everyone_in_my_club = 'Everyone in My Club'
 
-class UserType(PyEnum):
-    staff = 'Staff'
-    member = 'Member'
-    coach = 'Coach'
 
-class HouseKeeping():
-    create_user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=False)
-    update_user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=True)
+class WorkoutLogs():
+    create_user_type: Mapped[String] = mapped_column(String, nullable=False)
+    update_user_type: Mapped[String] = mapped_column(String, nullable=True)
     created_by: Mapped[int] = mapped_column(Integer)
     updated_by: Mapped[int] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
-class Workout(_database.Base, HouseKeeping):
+class Workout(_database.Base, WorkoutLogs):
     __tablename__ = "workout"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -69,13 +50,12 @@ class Workout(_database.Base, HouseKeeping):
 
     days = relationship(
         "WorkoutDay",
-        primaryjoin="and_(Workout.id == foreign(WorkoutDay.workout_id), WorkoutDay.is_deleted == False)",
+        primaryjoin="Workout.id == foreign(WorkoutDay.workout_id)",
         lazy='noload',
         back_populates="workout",
     )
 
-
-class WorkoutDay(_database.Base, HouseKeeping):
+class WorkoutDay(_database.Base, WorkoutLogs):
     __tablename__ = "workout_day"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -92,13 +72,12 @@ class WorkoutDay(_database.Base, HouseKeeping):
     )
     exercises = relationship(
         "WorkoutDayExercise",
-        primaryjoin="WorkoutDay.id == foreign(WorkoutDayExercise.id)",
+        primaryjoin="WorkoutDay.id == foreign(WorkoutDayExercise.workout_day_id)",
         lazy='noload',
         back_populates="workout_day",
     )
 
-
-class WorkoutDayExercise(_database.Base, HouseKeeping):
+class WorkoutDayExercise(_database.Base, WorkoutLogs):
     __tablename__ = "workout_day_exercise"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -109,8 +88,8 @@ class WorkoutDayExercise(_database.Base, HouseKeeping):
     seconds_per_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
     repetitions_per_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
     rest_between_set: Mapped[List[int]] = mapped_column(ARRAY(Integer), nullable=True)
-    intensity_type: Mapped[ExerciseIntensity] = mapped_column(Enum(ExerciseIntensity), default=ExerciseIntensity.max)
-    percentage_of_1rm: Mapped[float] = mapped_column(Float, nullable=True)
+    intensity_type: Mapped[Intensity] = mapped_column(Enum(Intensity))
+    intensity_value: Mapped[float] = mapped_column(Float, nullable=True)
     distance: Mapped[float] = mapped_column(Float, nullable=True)
     speed: Mapped[float] = mapped_column(Float, nullable=True)
     met_value: Mapped[float] = mapped_column(Float, nullable=True)
@@ -118,7 +97,7 @@ class WorkoutDayExercise(_database.Base, HouseKeeping):
 
     workout_day = relationship(
         "WorkoutDay",
-        primaryjoin="WorkoutDay.id == foreign(WorkoutDayExercise.id)",
+        primaryjoin="WorkoutDay.id == foreign(WorkoutDayExercise.workout_day_id)",
         lazy="noload",
         back_populates="exercises",
     )
@@ -131,8 +110,7 @@ class WorkoutDayExercise(_database.Base, HouseKeeping):
     )
 
 
-
-class MemberWorkout(_database.Base, HouseKeeping):
+class MemberWorkout(_database.Base, WorkoutLogs):
     __tablename__ = "member_workout"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
