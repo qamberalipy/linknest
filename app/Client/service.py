@@ -182,8 +182,22 @@ async def login_client(
 
 async def get_client_by_email(
     email_address: str, db: _orm.Session = _fastapi.Depends(get_db)
-) -> models.Client:
-    return db.query(models.Client).filter(models.Client.email == email_address).first()
+) -> _models.Client:
+    db_client = db.query(
+        _models.Client.id,
+        _models.Client.first_name,
+        _models.Client.last_name,
+        _models.Client.email,
+        func.array_agg(_models.ClientOrganization.org_id).label('org_ids')
+    ).join(
+        _models.ClientOrganization, and_(_models.ClientOrganization.client_id == _models.Client.id,_models.ClientOrganization.is_deleted==False)
+    ).filter(
+        _models.Client.email == email_address
+    ).group_by(
+        _models.Client.id, _models.Client.first_name, _models.Client.last_name, _models.Client.email
+    ).first()
+    
+    return db_client
 
 
 async def get_business_clients(
@@ -286,9 +300,15 @@ async def update_app_client(
     db: _orm.Session = _fastapi.Depends(get_db),
 ):
     db_client = db.query(_models.Client).filter(_models.Client.id == client_id).first()
-
+    # db_client = db.query(
+    #         _models.Client
+    #     ).join(
+    #         _models.ClientOrganization, and_(_models.ClientOrganization.client_id==client_id,_models.ClientOrganization.org_id==client.org_id,_models.ClientOrganization.is_deleted==False)
+    #     ).first()
+        
     if not db_client:
         raise _fastapi.HTTPException(status_code=404, detail="Member not found")
+    
     client.is_deleted=False
     for key, value in client.dict(exclude_unset=True).items():
         setattr(db_client, key, value)
@@ -300,14 +320,12 @@ async def update_app_client(
     
     return db_client
 
-async def delete_client(client_id: int,user_id,db: _orm.Session = _fastapi.Depends(get_db)):
-    db_client = db.query(_models.Client).filter(and_(_models.Client.id == client_id,_models.Client.is_deleted == False)).first()
+async def delete_client(client_id: int,org_id:int,db: _orm.Session = _fastapi.Depends(get_db)):
+    db_client = db.query(_models.ClientOrganization).filter(and_(_models.ClientOrganization.client_id == client_id,_models.ClientOrganization.is_deleted == False,_models.ClientOrganization.org_id==org_id)).first()
     if not db_client:
         raise _fastapi.HTTPException(status_code=404, detail="Member not found")
 
     db_client.is_deleted = True
-    db_client.updated_by = user_id
-    db_client.updated_at = datetime.datetime.now()
     db.commit()
     db.refresh(db_client)
     return {"status":"201","detail":"Member deleted successfully"}
@@ -361,7 +379,6 @@ async def get_total_clients(
 #         _models.Client.mobile_number,
 #         _models.Client.check_in,
 #         _models.Client.last_online,
-#         _models.Client.client_since,
 #         func.coalesce(
 #             _models.Client.first_name,
 #             db.query(_models.Client.first_name).filter(_models.Client.id == _models.Client.business_id)
@@ -445,7 +462,6 @@ async def get_total_clients(
 #             mobile_number=client.mobile_number,
 #             check_in=client.check_in,
 #             last_online=client.last_online,
-#             client_since=client.client_since,
 #             business_name=client.business_name,
 #             coach_name=client.coach_name,
 #         )
@@ -461,12 +477,11 @@ def get_filtered_clients(
     BusinessClient = _orm.aliased(_models.Client) 
     sort_mapping = {
 
-        "own_member_id": text("client.own_member_id"),
+        "own_member_id": text("client_organization.own_member_id"),
         "first_name": text("client.first_name"),
         "last_name": text("client.last_name"),
         "business_name": "business_name",
         "last_online": text("client.last_online"),
-        "client_since": text("client.client_since"),
         "created_at": text("client.created_at"),
         "check_in":text("client.check_in"),
         "client_status": text("client_organization.client_status"),
@@ -477,6 +492,9 @@ def get_filtered_clients(
         *_models.Client.__table__.columns,
         _models.ClientOrganization.org_id,
         _models.ClientOrganization.client_status,
+        _models.ClientOrganization.own_member_id,
+        _models.ClientOrganization.activated_on,
+        _models.ClientOrganization.check_in,
         _models.ClientMembership.membership_plan_id,
         _models.ClientMembership.auto_renewal,
         _models.ClientMembership.prolongation_period,	
@@ -498,16 +516,17 @@ def get_filtered_clients(
     ).outerjoin(
         _coach_models.Coach,and_(_coach_models.Coach.id == _models.ClientCoach.coach_id,_coach_models.Coach.is_deleted == False)
     ).join(
-        _models.ClientOrganization, _models.Client.id == _models.ClientOrganization.client_id
+        _models.ClientOrganization, and_(_models.Client.id == _models.ClientOrganization.client_id,_models.ClientOrganization.org_id==org_id,_models.ClientOrganization.is_deleted==False)
     ).join(
         _models.ClientMembership, _models.Client.id == _models.ClientMembership.client_id
     ).filter(
-        _models.Client.is_deleted == False,
-        _models.ClientOrganization.org_id == org_id
+        _models.Client.is_deleted == False
     ).group_by(
         _models.Client.id,
         _models.ClientOrganization.id,
         _models.ClientMembership.id,
+        _models.ClientOrganization.client_status,
+        _models.ClientOrganization.own_member_id,
         BusinessClient.id
     )
     
@@ -535,7 +554,7 @@ def get_filtered_clients(
             or_(
                 _models.Client.wallet_address.ilike(search_pattern),
                 _models.Client.profile_img.ilike(search_pattern),
-                _models.Client.own_member_id.ilike(search_pattern),
+                _models.ClientOrganization.own_member_id.ilike(search_pattern),
                 _models.Client.first_name.ilike(search_pattern),
                 _models.Client.last_name.ilike(search_pattern),
                 _models.Client.gender.ilike(search_pattern),
@@ -571,11 +590,15 @@ def get_filtered_clients(
    
 
 
-async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientByID:
+async def get_client_byid(db: _orm.Session, client_id: int,org_id:int) -> _schemas.ClientByID:
+    print("MY ORG",org_id)
     query = db.query(
             *_models.Client.__table__.columns,
             _models.ClientOrganization.org_id,
             _models.ClientOrganization.client_status,
+            _models.ClientOrganization.own_member_id,
+            _models.ClientOrganization.activated_on,
+            _models.ClientOrganization.check_in,
             _models.ClientMembership.membership_plan_id,
             _models.ClientMembership.auto_renewal,
             _models.ClientMembership.prolongation_period,	
@@ -595,22 +618,22 @@ async def get_client_byid(db: _orm.Session, client_id: int) -> _schemas.ClientBy
             _models.ClientCoach, _models.Client.id == _models.ClientCoach.client_id
         ).outerjoin(
             _coach_models.Coach, _coach_models.Coach.id == _models.ClientCoach.coach_id
-        ).outerjoin(
-            _models.ClientOrganization, _models.Client.id == _models.ClientOrganization.client_id
+        ).join(
+            _models.ClientOrganization, and_(_models.Client.id == _models.ClientOrganization.client_id,_models.ClientOrganization.org_id==org_id,_models.ClientOrganization.is_deleted==False)
         ).outerjoin(
             _models.ClientMembership, _models.Client.id == _models.ClientMembership.client_id
         ).filter(
             _models.Client.id == client_id,
-            _models.Client.is_deleted == False
+            _models.Client.is_deleted == False,
         ).group_by(
             _models.Client.id,
             _models.ClientOrganization.id,
-            _models.ClientMembership.id
+            _models.ClientMembership.id,
         )
     
 
     db_client=query.first()
-
+    print("This is my client: ",db_client)
     if db_client:
         return _schemas.ClientByID(**db_client._asdict())
     else:

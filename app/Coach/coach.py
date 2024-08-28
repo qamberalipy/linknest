@@ -32,7 +32,7 @@ async def create_coach(coach: _schemas.CoachCreate,request:Request, db: _orm.Ses
     user_id=request.state.user.get('id')
     if not _helpers.validate_email(coach.email):
         raise HTTPException(status_code=400, detail="Invalid email format")
-
+    
     return await _services.create_coach(coach,user_id,db)
 
 @router.put("/coach",response_model = _schemas.CoachUpdate,tags=["Coach API"])
@@ -44,19 +44,39 @@ async def update_coach(coach: _schemas.CoachUpdate,request:Request,db: _orm.Sess
     return db_coach
 
 @router.delete("/coach/{id}",response_model=SharedModifySchema, tags=["Coach API"])
-def delete_coach(id:int,request:Request,db: _orm.Session = Depends(get_db)):
+def delete_coach(id:int,org_id:int,request:Request,db: _orm.Session = Depends(get_db)):
     user_id=request.state.user.get('id')
-    db_coach = _services.delete_coach(id,user_id,db)
+    db_coach = _services.delete_coach(id,org_id,db)
     if db_coach is None:
         raise HTTPException(status_code=404, detail="Coach not found")
     return db_coach
 
 @router.get("/coach/{id}", response_model=_schemas.CoachReadSchema, tags=["Coach API"])
-def get_coach_by_id(id: int, db: _orm.Session = Depends(get_db)):
-    db_coach = _services.get_coach_by_id(id, db)
+def get_coach_by_id(id: int,org_id:int , db: _orm.Session = Depends(get_db)):
+    db_coach = _services.get_coach_by_id(id,org_id,db)
     if db_coach is None:
         raise HTTPException(status_code=404, detail="Coach not found")
     return db_coach
+
+@router.get("/coach/{email}/", response_model=_schemas.CoachReadSchema, tags=["Coach API"])
+async def get_coach_byemail(
+    email: str,
+    org_id: int,
+    db: _orm.Session = Depends(get_db)
+):
+    db_coach = await _services.get_coach_by_email(email, db)
+    
+    if db_coach:
+        if org_id in db_coach.org_ids:
+            logger.info("coach exists within the same organization")
+            raise HTTPException(status_code=400, detail="Email already registered")
+        else:
+            logger.info("coach does not exist within the same organization")
+            coach = _services.get_coach_by_id(db_coach.id,db_coach.org_ids[0],db)
+            return coach
+
+    else:
+        raise HTTPException(status_code=404, detail="Coach not found")
 
 @router.get("/coach/list/{org_id}", response_model=List[_schemas.CoachList],tags=["Coach API"])
 async def get_coach(org_id,db: _orm.Session = Depends(get_db)):
