@@ -48,6 +48,7 @@ class ExerciseFilterParams(pydantic.BaseModel):
     sort_order: Optional[str] = 'desc'
     limit:Optional[int] = None
     offset:Optional[int] = None
+    user_id:Optional[int]=None
 
 class ExerciseCreate(ExerciseBase):
     category_id:int 
@@ -68,11 +69,11 @@ class ExerciseRead(ExerciseBase):
 
 class ExerciseUpdate(pydantic.BaseModel):
     id:int
-    exercise_name:str
-    visible_for:VisibleFor
-    org_id:int
-    category_id :int
-    exercise_type :ExerciseType
+    exercise_name:Optional[str]=None
+    visible_for:Optional[VisibleFor]=None
+    org_id:Optional[int]=None
+    category_id :Optional[int]=None
+    exercise_type :Optional[ExerciseType]=None
     exercise_intensity:Optional[Intensity]=None
     intensity_value:Optional[float]= None
     difficulty:Difficulty
@@ -83,7 +84,7 @@ class ExerciseUpdate(pydantic.BaseModel):
     distance:Optional[float]=None
     speed:Optional[float]=None
     met_id :Optional[int]=None
-    gif_url :str
+    gif_url :Optional[str]=None
     video_url_male :Optional[str]=None
     video_url_female :Optional[str]=None
     thumbnail_male :Optional[str]=None

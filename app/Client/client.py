@@ -269,7 +269,7 @@ async def get_client(
 
     try:
         clients = _services.get_filtered_clients(db=db,org_id=org_id,params=filters)
-
+        
         if clients:
             return clients
         else:

@@ -32,7 +32,7 @@ class MealPlanBase(BaseModel):
     
 class CreateMealPlan(MealPlanBase):
     meals: List[CreateMeal]
-    member_ids: List[int]
+    member_id: List[int]
     created_at: Optional[datetime.datetime] = datetime.datetime.now()
     carbs: float
     protein: float
@@ -46,6 +46,7 @@ class ReadMealPlan(MealPlanBase):
     carbs : float
     protein: float
     fats : float
+    persona : str
 
 class UpdateMealPlan(BaseModel):
     id: int
@@ -67,24 +68,30 @@ class DeleteMealPlan(BaseModel):
 
 class MealPlanFilterParams(BaseModel):
     visible_for : Optional[VisibleForEnum] = None
+    meal_time : Optional[str] = None
     assign_to : Optional[str] = None
-    food_nutrients : Optional[str] = None
+    carbs : Optional[str] = None
+    protein: Optional[str] = None
+    fats : Optional[str] = None
     search_key: Optional[str] = None
     sort_key:Optional[str] = None
     sort_order: Optional[str] = None
+    member_id : Optional[List[int]] = []
+    food_id : Optional[List[int]] = []
     status: Optional[str] = None
     limit:Optional[int] = None
     offset:Optional[int] = None
+    created_by_me : Optional[int] = None
     
     @field_validator('visible_for', mode='before')
     def map_visible_for(cls, value):
-        if value == 'only_myself':
+        if value == 'Only myself':
             return VisibleForEnum.only_myself
-        elif value == 'staff_of_my_gym':
+        elif value == 'Staff of my gym':
             return VisibleForEnum.staff
-        elif value == 'members_of_my_gym':
+        elif value == 'Members of my gym':
             return VisibleForEnum.members
-        elif value == 'everyone_in_my_gym':
+        elif value == 'Everyone in my gym':
             return VisibleForEnum.everyone
         return value
     

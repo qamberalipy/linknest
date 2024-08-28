@@ -35,7 +35,7 @@ class ClientCreate(ClientBase):
     org_id: int
     coach_id: Optional[List[int]] = []
     membership_plan_id: int
-    client_status: ClientStatus="active"  # Corrected type annotation
+    client_status: ClientStatus="pending"  # Corrected type annotation
     own_member_id: str  
     send_invitation: bool
     auto_renewal:bool=False
@@ -46,7 +46,6 @@ class ClientCreate(ClientBase):
     class Config:
         from_attributes = True
         
-
 class ClientCreateApp(pydantic.BaseModel):
     first_name: str
     last_name: str
@@ -68,7 +67,6 @@ class ClientCreateApp(pydantic.BaseModel):
     status: Optional[str] = "pending"
     membership_plan_id: Optional[int] = 0
     is_deleted:Optional[bool]=False
-
 
 class RegisterClientApp(pydantic.BaseModel):
     own_member_id:str
@@ -92,7 +90,8 @@ class RegisterClientApp(pydantic.BaseModel):
         
         
 class RegisterClient(ClientBase):
-    pass
+    created_by: Optional[int]
+    updated_by: Optional[int]
 
 class ClientRead(ClientBase):
     id: int
@@ -283,14 +282,14 @@ class ClientFilterRead(pydantic.BaseModel):
     client_status:ClientStatus
     membership_plan_id:int
     auto_renewal:bool
-    prolongation_period:Optional[int]	
-    auto_renew_days:Optional[int]	
-    inv_days_cycle:Optional[int]
-    phone: Optional[str]
-    mobile_number: Optional[str]
-    check_in: Optional[datetime.datetime]
-    last_online: Optional[datetime.datetime]
-    business_name: Optional[str]
+    prolongation_period:Optional[int]=None	
+    auto_renew_days:Optional[int]=None	
+    inv_days_cycle:Optional[int]=None
+    phone: Optional[str]=None
+    mobile_number: Optional[str]=None
+    check_in: Optional[datetime.datetime]=None
+    last_online: Optional[datetime.datetime]=None
+    business_name: Optional[str]=None
     coaches: Optional[List[Dict]] = []
     activated_on: Optional[datetime.date] = None
     created_at: Optional[datetime.datetime] = None

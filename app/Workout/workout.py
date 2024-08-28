@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Literal, Sequence
+from typing import Annotated, Any, List, Literal, Sequence
 from pydantic import EmailStr
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
@@ -9,10 +9,9 @@ from .service import (
     delete_workout,
     delete_workout_day,
     delete_workout_day_exercise,
+    get_all_workout,
     get_all_workout_day,
     get_all_workout_day_exercise,
-    get_all_workout_mobile_view,
-    get_all_workout_table_view,
     get_workout,
     get_workout_day,
     get_workout_day_,
@@ -30,8 +29,7 @@ from ..Shared.dependencies import (
     get_db,
     get_module_permission,
     get_pagination_options,
-    get_user,
-)
+    get_user)
 from ..Shared.schema import PaginationOptions
 from .schema import (
     WorkoutCreate,
@@ -50,8 +48,8 @@ from .schema import (
 from ..Client import schema as _client_schema
 from ..Exercise import service as _exercise_service
 
-API_STR = "/workout_plans"
-router = APIRouter(prefix=API_STR, tags=["Workout router"])
+API_STR = "/workout"
+router = APIRouter(prefix=API_STR,tags=["Workout router"])
 get_read_permission = get_module_permission("Workout Plans", "read")
 get_write_permission = get_module_permission("Workout Plans", "write")
 get_delete_permission = get_module_permission("Workout Plans", "delete")
@@ -187,45 +185,22 @@ async def verify_workout(
 
 #workout_columns = list(WorkoutRead.model_fields.keys())
 def get_filters(
-    goals: Annotated[WorkoutGoal | None, Query(title="Workout Goal")] = None,
+    goals: Annotated[list[WorkoutGoal], Query(title="Workout Goal")] = [],
     level: Annotated[WorkoutLevel | None, Query(title="Workout Level")] = None,
-    equipment_id: Annotated[int | None, Query(title="Filter workouts by equipment")] = None,
-    _search: Annotated[
-        str | None, Query(title="Search", description="Search workout by name")
-    ] = None,
-    _include_days: Annotated[
-        bool,
-        Query(title="Days", description="Whether to includes days of that workout"),
-    ] = False,
-    _include_days_and_exercises: Annotated[
-        bool, Query(description="To include that workout's days and exercises")
-    ] = False,
-    _sort_column: Annotated[
-        str | None, Query(description="The column to sort")
-    ] = None,
-    _sort_dir: Annotated[
-        Literal["asc", "desc"],
-        Query(
-            description="The direction to sort the column in like [asc]ending and [desc]ending"
-        ),
-    ] = "asc",
-    _results_per_goal: Annotated[
-        int,
-        Query(
-            description="The direction to sort the column in like [asc]ending and [desc]ending"
-        ),
-    ] = 3,
-):
+    search: Annotated[str | None, Query(title="Search")] = None,
+    include_days: Annotated[bool,Query(),] = False,
+    include_days_and_exercises: Annotated[bool, Query()] = False,
+    sort_key: Annotated[str | None, Query()] = None,
+    sort_order: Annotated[Literal["asc", "desc"],Query()] = "asc"):
+    
     return WorkoutFilter(
         goals=goals,
         level=level,
-        search=_search,
-        include_days=_include_days,
-        include_days_and_exercises=_include_days_and_exercises,
-        sort_column=_sort_column,
-        sort_dir=_sort_dir,
-        results_per_goal=_results_per_goal,
-        equipment_id=equipment_id,
+        search=search,
+        include_days=include_days,
+        include_days_and_exercises=include_days_and_exercises,
+        sort_key=sort_key,
+        sort_order=sort_order
     )
 
 
@@ -253,13 +228,7 @@ def get_filters(
 #     return workout_day_exercise
 
 
-@router.post(
-    "/day/exercise",
-    dependencies=[
-        Depends(verify_create_workout_day_exercise),
-        Depends(get_write_permission),
-    ],
-)
+@router.post("/day/exercise")
 async def save_exercise(
     workout_day_exercise: WorkoutDayExerciseCreate,
     db: Annotated[Session, Depends(get_db)],
@@ -277,10 +246,7 @@ async def save_exercise(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put(
-    "/day/exercise/{workout_day_exercise_id}",
-    dependencies=[Depends(get_write_permission)],
-)
+@router.put("/day/exercise/{exercise_id}")
 async def update_exercise(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[_client_schema.ClientRead, Depends(get_user)],
@@ -302,11 +268,7 @@ async def update_exercise(
         db.rollback()
         raise e
 
-
-@router.delete(
-    "/day/exercise/{workout_day_exercise_id}",
-    dependencies=[Depends(get_delete_permission)],
-)
+@router.delete("/day/exercise/{exercise_id}")
 async def delete_exercise(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[_client_schema.ClientRead, Depends(get_user)],
@@ -328,10 +290,8 @@ async def delete_exercise(
         raise e
 
 
-@router.get(
-    "/day/{workout_day_id}/exercise", dependencies=[Depends(get_read_permission)]
-)
-async def get_one_day_exercise(
+@router.get("/day/{workout_day_id}/exercise")
+async def get_exercise_by_day(
     workout_day_id: Annotated[int, Path(description="Id of the workout")],
     db: Annotated[Session, Depends(get_db)],
 ):
@@ -340,11 +300,11 @@ async def get_one_day_exercise(
     )
 
 
-@router.get("/day", dependencies=[Depends(get_read_permission)])
+@router.get("/day")
 async def get_all_day(
     db: Annotated[Session, Depends(get_db)],
     pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
-    _include_exercises: Annotated[
+    include_exercises: Annotated[
         bool,
         Query(
             description="Whether the days should include the exercises associated with that day"
@@ -373,65 +333,53 @@ async def get_all_day(
 #     return workout
 
 
-workout_day_columns = list(WorkoutDayRead.model_fields.keys())
+# workout_day_columns = list(WorkoutDayRead.model_fields.keys())
 
 
-@router.get("/{workout_id}/day", dependencies=[Depends(get_read_permission)])
-async def get_day_by_workout_id(
-    workout_id: Annotated[int, Path(description="Id of the workout")],
-    db: Annotated[Session, Depends(get_db)],
-    pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
-    _include_exercises: Annotated[
-        bool,
-        Query(
-            description="Whether the days should include the exercises associated with that day"
-        ),
-    ] = False,
-    _sort_column: Annotated[
-        Literal[*tuple(workout_day_columns)] | None,
-        Query(description="The column to sort"),
-    ] = None,
-    _sort_dir: Annotated[
-        Literal["asc", "desc"],
-        Query(
-            description="The direction to sort the column in like [asc]ending and [desc]ending"
-        ),
-    ] = "asc",
-):
-    return await get_all_workout_day(
-        db,
-        WorkoutDayFilter(
-            workout_id=workout_id,
-            include_exercises=_include_exercises,
-            sort_column=_sort_column,
-            sort_dir=_sort_dir,
-        ),
-        pagination_options,
-    )
+# @router.get("/{workout_id}/day", dependencies=[Depends(get_read_permission)])
+# async def get_day_by_workout_id(
+    # workout_id: Annotated[int, Path(description="Id of the workout")],
+    # db: Annotated[Session, Depends(get_db)],
+    # pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
+    # _include_exercises: Annotated[
+        # bool,
+        # Query(
+            # description="Whether the days should include the exercises associated with that day"
+        # ),
+    # ] = False,
+    # _sort_column: Annotated[
+        # Literal[*tuple(workout_day_columns)] | None,
+        # Query(description="The column to sort"),
+    # ] = None,
+    # _sort_dir: Annotated[
+        # Literal["asc", "desc"],
+        # Query(
+            # description="The direction to sort the column in like [asc]ending and [desc]ending"
+        # ),
+    # ] = "asc",
+# ):
+    # return await get_all_workout_day(
+        # db,
+        # WorkoutDayFilter(
+            # workout_id=workout_id,
+            # include_exercises=_include_exercises,
+            # sort_column=_sort_column,
+            # sort_dir=_sort_dir,
+        # ),
+        # pagination_options,
+    # )
 
 
-@router.post(
-    "/day",
-    dependencies=[Depends(verify_create_workout_day), Depends(get_write_permission)],
-)
+@router.post("/day", response_model=WorkoutDayCreate)
 async def save_day(
     workout_day: WorkoutDayCreate,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[dict, Depends(get_user)],
 ):
-    try:
-        return await save_workout_day(db, workout_day, user)
-    except DataError:
-        db.rollback()
-        raise HTTPException(
-            status_code=400, detail="Data error occurred, check your input"
-        )
-    except:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Unknown exception occured")
+    return await save_workout_day(db, workout_day, user)
 
 
-@router.put("/day/{day_id}", dependencies=[Depends(get_write_permission)])
+@router.put("/day/{day_id}")
 async def update_day(
     day_id: int,
     workout_day: WorkoutDayUpdate,
@@ -453,7 +401,7 @@ async def update_day(
         raise e
 
 
-@router.delete("/day/{day_id}", dependencies=[Depends(get_delete_permission)])
+@router.delete("/day/{day_id}")
 async def delete_day(
     day_id: int,
     db: Annotated[Session, Depends(get_db)],
@@ -473,13 +421,13 @@ async def delete_day(
 
 
 @router.get("")
-async def get_all(
+async def get_all(org_id,
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[WorkoutFilter, Depends(get_filters)],
-    pagination_options: Annotated[PaginationOptions, Depends(get_pagination_options)],
     user: Annotated[dict, Depends(get_user)],
+    pagination_options:Annotated[PaginationOptions,Depends(get_pagination_options)]
 ):
-        return await get_all_workout_table_view(db, user, filters, pagination_options)
+    return await get_all_workout(org_id,db,user,filters,pagination_options)
 
 #@router.get("mobile/workout_plans")
 #async def get_all_mobile(
@@ -489,34 +437,30 @@ async def get_all(
 #):
 #        return await get_all_workout_mobile_view(db, user, filters)
 
-@router.get("/{workout_id}", dependencies=[Depends(get_read_permission)])
-async def get_one(
-    workout_id: Annotated[int, Path(description="Id of the workout")],
+@router.get("/{id}")
+async def get_by_id(
+    id:int,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[dict, Depends(get_user)],
-    _include_days: Annotated[
-        bool, Query(description="To include that workout's days")
+    include_days: Annotated[
+        bool, Query(description="include workout days")
     ] = False,
-    _include_days_and_exercises: Annotated[
-        bool, Query(description="To include that workout's days and exercises")
+    include_days_and_exercises: Annotated[
+        bool, Query(description="include both workout days and exercises")
     ] = False,
 ):
-    workout = await get_workout(
-        db, workout_id, user["org_id"], _include_days, _include_days_and_exercises
-    )
-    if not workout:
-        raise HTTPException(status_code=404, detail="Workout not found")
+    workout = await get_workout(db, id, include_days, include_days_and_exercises)
     return workout
 
 
-@router.post("", dependencies=[Depends(get_write_permission)])
+@router.post("")
 async def save(
     workout: WorkoutCreate,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[dict, Depends(get_user)],
 ):
     try:
-        return await save_workout(db, user, workout)
+        workout_data=await save_workout(db, user, workout)
+        return workout_data
     except DataError:
         db.rollback()
         raise HTTPException(
@@ -527,7 +471,7 @@ async def save(
         raise HTTPException(status_code=500, detail="Unknown exception occured")
 
 
-@router.put("/{workout_id}", dependencies=[Depends(get_write_permission)])
+@router.put("/{id}")
 async def update(
     workout_model: Annotated[Workout, Depends(verify_workout)],
     workout: WorkoutUpdate,
@@ -546,7 +490,7 @@ async def update(
         raise e
 
 
-@router.delete("/{workout_id}", dependencies=[Depends(get_delete_permission)])
+@router.delete("/{id}")
 async def delete(
     workout_id: int,
     workout_model: Annotated[Workout, Depends(verify_workout)],

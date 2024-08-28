@@ -215,7 +215,6 @@ async def get_business_clients(
         )
         .all()
     )
-
     return clients
 
 
@@ -246,7 +245,6 @@ async def update_client(
     
     db.refresh(db_client)
     db.refresh(db_client_status)
-    
     return db_client
 
 
@@ -485,6 +483,7 @@ def get_filtered_clients(
         "business_name": "business_name",
         "last_online": text("client.last_online"),
         "created_at": text("client.created_at"),
+        "check_in":text("client.check_in"),
         "client_status": text("client_organization.client_status"),
         "membership_plan_id":text("client_membership.membership_plan_id")                      
     }

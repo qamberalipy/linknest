@@ -30,7 +30,7 @@ async def get_met(db: _orm.Session = _fastapi.Depends(get_db)):
 async def get_category(db: _orm.Session = _fastapi.Depends(get_db)):
     return db.query(*_models.ExerciseCategory.__table__.columns)
 
-async def create_exercise(exercise: _schemas.ExerciseCreate,user_id,db: _orm.Session):
+async def create_exercise(exercise: _schemas.ExerciseCreate,user_id,user_type,db: _orm.Session):
 
     existing_exercise = db.query(_models.Exercise).filter(
         _models.Exercise.exercise_name == exercise.exercise_name,
@@ -66,7 +66,9 @@ async def create_exercise(exercise: _schemas.ExerciseCreate,user_id,db: _orm.Ses
         updated_by=user_id,
         created_by=user_id,
         created_at=datetime.now(),
-        updated_at=datetime.now()
+        updated_at=datetime.now(),
+        created_by_type=user_type,
+        updated_by_type=user_type
         )
     
     db.add(db_exercise)
@@ -99,82 +101,77 @@ def create_exercise_primary_muscle(exercise_id,primary_muscle_ids,db: _orm.Sessi
     
     return db_exercise_primary_muscle
 
-async def exercise_update(data:_schemas.ExerciseUpdate,user_id,db: _orm.Session = _fastapi.Depends(get_db)):
-    data_update=[]
-    db_exercise=db.query(_models.Exercise).filter(_models.Exercise.id==data.id).first()
-    if db_exercise:
-        for key, value in data.dict(exclude_unset=True).items():
+async def exercise_update(data: _schemas.ExerciseUpdate, user_id,user_type,db: _orm.Session = _fastapi.Depends(get_db)):
+    
+    secondary_muscles = None
+    db_exercise = db.query(_models.Exercise).filter(_models.Exercise.id == data.id).first()
+    
+    if not db_exercise:
+        raise _fastapi.HTTPException(status_code=404, detail="Exercise not found")
+        
+    else:
+        update_data = data.dict(exclude_unset=True)
+        for key, value in update_data.items():
             setattr(db_exercise, key, value)
-        db_exercise.updated_by=user_id    
-        db_exercise.updated_at=datetime.now()
+        db_exercise.updated_by = user_id    
+        db_exercise.updated_by_type=user_type
+        db_exercise.updated_at = datetime.now()
         db.commit()
         db.refresh(db_exercise)
 
-    query1=db.query(_models.ExerciseEquipment).filter(_models.ExerciseEquipment.exercise_id==data.id).all()
-    query2=db.query(_models.ExercisePrimaryMuscle).filter(_models.ExercisePrimaryMuscle.exercise_id==data.id).all()
-    query3=db.query(_models.ExercisePrimaryJoint).filter(_models.ExercisePrimaryJoint.exercise_id==data.id).all()
-    query4=db.query(_models.ExerciseSecondaryMuscle).filter(_models.ExerciseSecondaryMuscle.exercise_id==data.id).all()
+    existing_equipment_ids = set(item.equipment_id for item in db.query(_models.ExerciseEquipment).filter(_models.ExerciseEquipment.exercise_id == data.id).all())
+    existing_primary_muscle_ids = set(item.muscle_id for item in db.query(_models.ExercisePrimaryMuscle).filter(_models.ExercisePrimaryMuscle.exercise_id == data.id).all())
+    existing_secondary_muscle_ids = set(item.muscle_id for item in db.query(_models.ExerciseSecondaryMuscle).filter(_models.ExerciseSecondaryMuscle.exercise_id == data.id).all())
+    existing_primary_joint_ids = set(item.primary_joint_id for item in db.query(_models.ExercisePrimaryJoint).filter(_models.ExercisePrimaryJoint.exercise_id == data.id).all())
 
-    delete_equipment_ids = [item.equipment_id for item in query1]
-    delete_primary_muscle_ids=[item.muscle_id for item in query2]
-    delete_secondary_muscle_ids=[item.primary_joint_id for item in query3]
-    delete_primary_joint_ids=[item.muscle_id for item in query4]
+    new_equipment_ids = set(data.equipment_ids or [])
+    new_primary_muscle_ids = set(data.primary_muscle_ids or [])
+    new_secondary_muscle_ids = set(data.secondary_muscle_ids or [])
+    new_primary_joint_ids = set(data.primary_joint_ids or [])
 
-    add_equipment_ids=data.equipment_ids
-    add_primary_muscle_ids=data.primary_muscle_ids
-    add_primary_joint_ids=data.primary_joint_ids
-    add_secondary_muscle_ids=data.secondary_muscle_ids
+    add_equipment_ids = new_equipment_ids - existing_equipment_ids
+    delete_equipment_ids = existing_equipment_ids - new_equipment_ids
 
-    for equipment_id in delete_equipment_ids:
-        if equipment_id in add_equipment_ids:
-            delete_equipment_ids.remove(equipment_id)
-            add_equipment_ids.remove(equipment_id)
+    add_primary_muscle_ids = new_primary_muscle_ids - existing_primary_muscle_ids
+    delete_primary_muscle_ids = existing_primary_muscle_ids - new_primary_muscle_ids
 
-    for muscle_id in delete_primary_muscle_ids:
-        if muscle_id in add_primary_muscle_ids:
-            delete_primary_muscle_ids.remove(muscle_id)
-            add_primary_muscle_ids.remove(muscle_id)
+    add_secondary_muscle_ids = new_secondary_muscle_ids - existing_secondary_muscle_ids
+    delete_secondary_muscle_ids = existing_secondary_muscle_ids - new_secondary_muscle_ids
 
-    for muscle_id in delete_secondary_muscle_ids:
-        if muscle_id in add_secondary_muscle_ids:
-            delete_secondary_muscle_ids.remove(muscle_id)
-            add_secondary_muscle_ids.remove(muscle_id)
-
-    for joint_id in delete_primary_joint_ids:
-        if joint_id in add_primary_joint_ids:
-            delete_primary_joint_ids.remove(joint_id)
-            add_primary_joint_ids.remove(joint_id)
+    add_primary_joint_ids = new_primary_joint_ids - existing_primary_joint_ids
+    delete_primary_joint_ids = existing_primary_joint_ids - new_primary_joint_ids
 
     if add_equipment_ids:
-        equipments=create_exercise_equipment(data.id,add_equipment_ids,db)
+        equipments = create_exercise_equipment(data.id, list(add_equipment_ids), db)
+        db.add_all(equipments)
     
     if add_primary_muscle_ids:
-        primary_muscles=create_exercise_primary_muscle(data.id,add_primary_muscle_ids,db)   
-    
+        primary_muscles = create_exercise_primary_muscle(data.id, list(add_primary_muscle_ids), db)
+        db.add_all(primary_muscles)
+
     if add_secondary_muscle_ids:
-        secondary_muscles=create_exercise_secondary_muscle(data.id,add_secondary_muscle_ids,db)  
-        data_update.append(secondary_muscles) 
-    
+        secondary_muscles = create_exercise_secondary_muscle(data.id, list(add_secondary_muscle_ids), db)
+        db.add_all(secondary_muscles)
+
     if add_primary_joint_ids:
-        primary_joints=create_exercise_primary_joint(data.id,add_primary_joint_ids,db)   
-   
-    db.add_all(equipments + primary_muscles + secondary_muscles + primary_joints) 
-    
+        primary_joints = create_exercise_primary_joint(data.id, list(add_primary_joint_ids), db)
+        db.add_all(primary_joints)
+
     if delete_equipment_ids:
-        delete_exercise_data(data.id,equipment_ids=delete_equipment_ids,db=db)
+        delete_exercise_data(data.id, equipment_ids=list(delete_equipment_ids), db=db)
 
     if delete_primary_muscle_ids:
-        delete_exercise_data(data.id,primary_muscle_ids=delete_primary_muscle_ids,db=db)
+        delete_exercise_data(data.id, primary_muscle_ids=list(delete_primary_muscle_ids), db=db)
 
     if delete_secondary_muscle_ids:
-        delete_exercise_data(data.id,secondary_muscle_ids=delete_secondary_muscle_ids,db=db)
+        delete_exercise_data(data.id, secondary_muscle_ids=list(delete_secondary_muscle_ids), db=db)
 
     if delete_primary_joint_ids:
-        delete_exercise_data(data.id,primary_joint_ids=delete_primary_joint_ids,db=db)   
+        delete_exercise_data(data.id, primary_joint_ids=list(delete_primary_joint_ids), db=db)
 
     db.commit()
 
-    return {"status":"201","detail":"Exercise updated successfully"}   
+    return {"status": "201", "detail": "Exercise updated successfully"}
 
 def create_exercise_primary_joint(exercise_id,primary_joint_ids,db: _orm.Session = _fastapi.Depends(get_db)):
     db_exercise_primary_joint=[_models.ExercisePrimaryJoint(
@@ -237,7 +234,8 @@ def get_filters(
     sort_key:Annotated[str, _fastapi.Query(title="Sort Key")] = None,
     sort_order:Annotated[str, _fastapi.Query(title="Sort Order")] = 'desc',
     limit: Annotated[int, _fastapi.Query(description="Pagination Limit")] = None,
-    offset: Annotated[int, _fastapi.Query(description="Pagination offset")] = None
+    offset: Annotated[int, _fastapi.Query(description="Pagination offset")] = None,
+    user_id: Annotated[int, _fastapi.Query(description="User ID")] = None
 ):
     return _schemas.ExerciseFilterParams(
         search_key=search_key,
@@ -248,15 +246,17 @@ def get_filters(
         sort_key=sort_key,
         sort_order=sort_order,
         limit=limit,
-        offset = offset
+        offset = offset,
+        user_id=user_id
     )
 
-async def delete_exercise(id:int,user_id,db: _orm.Session = _fastapi.Depends(get_db)):
+async def delete_exercise(id:int,user_id,user_type,db: _orm.Session = _fastapi.Depends(get_db)):
     db_exercise=db.query(_models.Exercise).filter(and_(_models.Exercise.id==id,_models.Exercise.is_deleted==False)).first()
 
     if db_exercise:
         db_exercise.updated_at=datetime.now()
         db_exercise.updated_by=user_id
+        db_exercise.updated_by_type=user_type
         db_exercise.is_deleted = True
         db.commit()    
     else :
@@ -275,6 +275,7 @@ async def get_exercise(
     params: Optional[_schemas.ExerciseFilterParams] = None,
     org_id: Optional[int] = None,
     id: Optional[int] = None,
+    user_type:Optional[str]=None,
     db: _orm.Session = _fastapi.Depends(get_db)
 ):
     sort_mapping = {
@@ -360,9 +361,11 @@ async def get_exercise(
         if params.exercise_type:
             query = query.filter(Exercise.exercise_type == params.exercise_type)      
 
-        query = query.filter(Exercise.org_id == org_id)     
+        if params.user_id:
+            query=query.filter(and_(Exercise.created_by == params.user_id,Exercise.created_by_type == user_type))    
 
-        
+        query = query.filter(Exercise.org_id == org_id)     
+  
     filtered_exercise_query = query.subquery('filtered_exercise')
     
     query = db.query(
@@ -427,16 +430,3 @@ async def get_exercise(
     db_exercise = query.all()
     exercise_data = [_schemas.ExerciseRead.from_orm(exercise) for exercise in db_exercise]
     return {'data': exercise_data, 'total_counts': total_counts, 'filtered_counts': filtered_counts}
-
-
-        
-    
-    
-    
-
-
-
-
-
-
-

@@ -21,12 +21,11 @@ class Difficulty(str,PyEnum):
 class ExerciseType(str,PyEnum):
     time_based = 'Time Based'
     repetition_based = 'Repetition Based'
-
 class VisibleFor(str,PyEnum):
     only_myself = 'Only Myself'
-    staff_of_my_club = 'Staff of My Club'
-    members_of_my_club = 'Members of My Club'
-    everyone_in_my_club = 'Everyone in My Club'
+    staff_of_my_club = 'Coaches Of My Gym'
+    members_of_my_club = 'Members Of My Gym'
+    everyone_in_my_club = 'Everyone In My Gym'
 
 class Exercise(_database.Base):
     __tablename__ = 'exercise'
@@ -34,7 +33,7 @@ class Exercise(_database.Base):
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     org_id=_sql.Column(_sql.Integer)
     exercise_name = _sql.Column(_sql.String, nullable=True)
-    visible_for = _sql.Column(_sql.Enum(VisibleFor), nullable=True)
+    visible_for = _sql.Column(_sql.Enum(VisibleFor))
     category_id = _sql.Column(_sql.Integer, nullable=True) 
     exercise_intensity= _sql.Column(_sql.Enum(Intensity), nullable=True)  
     intensity_value=_sql.Column(_sql.Float, nullable=True)
@@ -58,6 +57,8 @@ class Exercise(_database.Base):
     updated_by=_sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=datetime.now())
     updated_at = _sql.Column(_sql.DateTime, default=datetime.now())
+    created_by_type=_sql.Column(_sql.String)
+    updated_by_type=_sql.Column(_sql.String)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     
 class Equipment(_database.Base):

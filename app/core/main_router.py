@@ -109,6 +109,7 @@ async def forget_password(staff : _schemas.ForgetPasswordRequest ,db: _orm.Sessi
     # Generate a password reset token
     token = _helpers.generate_password_reset_token(user_json)
     
+    set_token = _services.set_reset_token(user.id, user.email, token, db)
     html_body = _services.generate_password_reset_html(user.first_name, org_email, org_name, token)
 
     # Send the password reset email
@@ -116,36 +117,41 @@ async def forget_password(staff : _schemas.ForgetPasswordRequest ,db: _orm.Sessi
     if not email_sent:
         raise HTTPException(status_code=500, detail="Failed to send email")
 
-    return JSONResponse(content={"message": "Password reset email sent successfully"}, status_code=200)
+    return JSONResponse(content={"message": f"An e-mail with a password reset link has been sent to {user.email}. If you did not receive the email, please check your spam/junk mail folder."}, status_code=200)
 
 @router.get("/reset_password/{token}")
-async def verify_token(token: str):
+async def verify_token(token: str, db: _orm.Session = Depends(get_db)):
 
     payload = _helpers.verify_password_reset_token(token)
     payload = json.loads(payload)
 
-    if payload:
+    if _services.get_reset_token(payload['id'], db) == token:
         return JSONResponse(content=payload, status_code=200)
     else:
-        raise HTTPException(status_code=401, detail="Token has Expired.")
+        raise HTTPException(status_code=401, detail="The reset link is invalid or has expired. Please request a new password reset link.")
      
 @router.post("/reset_password")
 async def reset_password(user : _schemas.ResetPasswordRequest, db: _orm.Session = Depends(get_db)):
-
-    data = _helpers.verify_password_reset_token(user.token)
-    if data is None:
-        raise HTTPException(status_code=400, detail="Invalid Token.")
     
-    if user.new_password != user.confirm_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
-    
-    password = _services.hash_password(user.new_password)
-    # Update the user's password
-    user = await _services.update_user_password(user.id, user.org_id ,password, db)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return JSONResponse(content={"message": "Password reset successfully"}, status_code=200)
-
+    token = _services.get_reset_token(user.id, db)
+    if token == user.token:
+        data = _helpers.verify_password_reset_token(user.token)
+        
+        if data is None or any(key not in data for key in ["id","org_id"]):
+            raise HTTPException(status_code=400, detail="The reset link is invalid or has expired. Please request a new password reset link.")
+        
+        if user.new_password != user.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        
+        password = _services.hash_password(user.new_password)
+        # Update the user's password
+        user = await _services.update_user_password(user.id, user.org_id ,password, db)
+        _services.delete_reset_token(user.id, db)
+        if not user:
+            raise HTTPException(status_code=404, detail="It appears there is no account with this id. Please verify the details provided.")
+        return JSONResponse(content={"message": "Your password has been reset successfully. You can now log in with your new password."}, status_code=200)
+    else:
+        raise HTTPException(status_code=400, detail="The reset link is invalid or has expired. Please request a new password reset link.")
 
 @router.post("/test_token")
 async def test_token(

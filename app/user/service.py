@@ -26,6 +26,9 @@ import smtplib
 from email.mime.text import MIMEText
 from fastapi import APIRouter, Depends, HTTPException, Header
 from email.mime.multipart import MIMEMultipart
+import sendgrid
+# import resend
+from sendgrid.helpers.mail import Mail, Email, To, Content
 
 # Load environment variables
 
@@ -37,6 +40,7 @@ BASE_URL = os.getenv("BASE_URL")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 SMTP_PORT = os.getenv("SMTP_PORT")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
+# RESEND_API_KEY = os.getenv('RESEND_API_KEY')
 
 
 oauth2schema = _security.OAuth2PasswordBearer(tokenUrl="api/login")
@@ -203,7 +207,7 @@ async def get_filtered_user_by_email(email: str, db: _orm.Session = _fastapi.Dep
     if user:
         return user
     else: 
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="It appears there is no account with this email. Please verify the address provided.")
 
 async def get_user_by_email_and_org(email: str, org_id: int,db: _orm.Session = _fastapi.Depends(get_db)):
     return db.query(models.User).filter(
@@ -242,7 +246,7 @@ async def get_alluser_data(email: str, db: _orm.Session = _fastapi.Depends(get_d
 async def update_user_password(user_id: int , org_id : int ,new_password : str, db: _orm.Session = _fastapi.Depends(get_db)):
     user = db.query(_models.User).filter(_models.User.id == user_id, _models.User.org_id == org_id, _models.User.is_deleted == False).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="It appears there is no account with this id. Please verify the details provided.")
     
     user.password = new_password
     db.commit()
@@ -483,6 +487,55 @@ def send_password_reset_email(recipient_email: str, subject: str, html_body: str
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         return False
+
+# def send_password_reset_email(recipient_email: str, subject: str, html_body: str) -> bool:
+#     sender_email = "letsmove.project2024@gmail.com"
+
+#     resend.api_key = RESEND_API_KEY
+    
+#     params: resend.Domains.CreateParams = {
+#         "name": "atmosphere.fitnfi.com",
+#         }
+
+#     resend.Domains.create(params)
+    
+#     params: resend.Emails.SendParams = {
+#     "from": sender_email,
+#     "to": recipient_email,
+#     "subject": subject,
+#     "html": html_body
+#     }
+
+#     try:
+#         # Send the email
+#         response = resend.Emails.send(params)
+#         print(response)
+#         if response.status_code in (200,201,202):
+#             return True
+#         else:
+#             print(f"Failed to send email. Status code: {response.status_code}, Response body: {response.body}")
+#             return False
+#     except Exception as e:
+#         print(f"Failed to send email: {str(e)}")
+#         return False
+
+
+
+def set_reset_token(id: int, email: str, token: str, db: _orm.Session):
+    db.query(_models.User).filter(_models.User.id == id).filter(_models.User.email == email).update({"reset_token": token})
+    db.commit()
+    return token
+
+def get_reset_token(id: int, db: _orm.Session):
+    user = db.query(_models.User).filter(_models.User.id == id, _models.User.reset_token.isnot(None)).first()
+    if user is None:
+        return None
+
+    return user.reset_token
+
+def delete_reset_token(id: int, db: _orm.Session):
+    db.query(_models.User).filter(_models.User.id == id).update({"reset_token": None})
+    db.commit()
 
 def get_all_countries( db: _orm.Session):
     return db.query(_models.Country).filter(_models.Country.is_deleted == False).all()
