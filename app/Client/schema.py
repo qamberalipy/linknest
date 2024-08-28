@@ -188,9 +188,9 @@ class ClientByID(pydantic.BaseModel):
     client_status:Optional[ClientStatus]=None
     membership_plan_id: Optional[int] = None
     auto_renewal:Optional[bool]=None
-    prolongation_period:Optional[int]	
-    auto_renew_days:Optional[int]	
-    inv_days_cycle:Optional[int]
+    prolongation_period:Optional[int]=0	
+    auto_renew_days:Optional[int]=0	
+    inv_days_cycle:Optional[int]=0
 
     class Config:
         from_attributes = True

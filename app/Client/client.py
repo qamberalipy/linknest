@@ -207,6 +207,35 @@ async def get_client_by_id(id: int,org_id: Annotated[int, Query(title="Organizat
         logger.error(f"DataError: {e}")
         raise HTTPException(status_code=400, detail="Data error occurred, check your input")
 
+@router.get("/member/{email}/", response_model=_schemas.ClientByID, tags=["Member Router"])
+async def get_client_by_email(
+    email: str,
+    org_id: int,
+    db: _orm.Session = Depends(get_db)
+):
+    db_client = await _services.get_client_by_email(email, db)
+    logger.info(db_client)
+    
+    if db_client:
+        if org_id in db_client.org_ids:
+            logger.info("Client exists within the same organization")
+            raise HTTPException(status_code=400, detail="Email already registered")
+        else:
+            logger.info("Client does not exist within the same organization")
+            client = await _services.get_client_byid(db=db, client_id=db_client.id, org_id=db_client.org_ids[0])
+            return client
+
+    else:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    
+    # except IntegrityError as e:
+    #     logger.error(f"IntegrityError: {e}")
+    #     raise HTTPException(status_code=400, detail="Integrity error occurred")
+    # except DataError as e:
+    #     logger.error(f"DataError: {e}")
+    #     raise HTTPException(status_code=400, detail="Data error occurred, check your input")
+
 
 def get_filters(
 

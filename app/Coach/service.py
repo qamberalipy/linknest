@@ -73,7 +73,6 @@ def create_appcoach(coach: _schemas.CoachAppBase,db: _orm.Session):
         zipcode=coach.zipcode,
         address_1=coach.address_1,
         address_2=coach.address_2,
-        coach_since=coach.coach_since,
         
     )
     db.add(db_coach)
@@ -163,10 +162,23 @@ async def get_coach_by_email(
     email_address: str, db: _orm.Session = _fastapi.Depends(get_db)
 ) -> _models.Coach:
 
-    query = db.query(_models.Coach).filter(
-        models.Coach.email == email_address,
-    )
-    return query.first()
+    db_coach = db.query(
+        _models.Coach.id,
+        _models.Coach.first_name,
+        _models.Coach.last_name,
+        _models.Coach.email,
+        func.array_agg(_models.CoachOrganization.org_id).label('org_ids')
+        ).join(
+            _models.CoachOrganization,and_(_models.CoachOrganization.coach_id==_models.Coach.id,_models.CoachOrganization.is_deleted==False)    
+        ).filter(
+            models.Coach.email == email_address
+        ).group_by(
+            _models.Coach.id,   
+            _models.Coach.first_name,
+            _models.Coach.last_name,
+            _models.Coach.email,
+        ).first()
+    return db_coach
 
 
 def create_bank_detail(coach: _schemas.CoachCreate,user_id,db: _orm.Session):
@@ -187,7 +199,6 @@ def create_bank_detail(coach: _schemas.CoachCreate,user_id,db: _orm.Session):
 def create_coach_record(coach: _schemas.CoachCreate, db: _orm.Session,user_id,bank_detail_id: int):
     db_coach = _models.Coach(
         wallet_address=coach.wallet_address,
-        own_coach_id=coach.own_coach_id,
         profile_img=coach.profile_img,
         first_name=coach.first_name,
         last_name=coach.last_name,
@@ -204,10 +215,7 @@ def create_coach_record(coach: _schemas.CoachCreate, db: _orm.Session,user_id,ba
         zipcode=coach.zipcode,
         address_1=coach.address_1,
         address_2=coach.address_2,
-        coach_since=coach.coach_since,
         bank_detail_id=bank_detail_id,
-        check_in=coach.check_in,
-        last_online=coach.last_online,
         created_by=user_id,
         updated_by=user_id,
         created_at=dt.now(),
@@ -217,11 +225,12 @@ def create_coach_record(coach: _schemas.CoachCreate, db: _orm.Session,user_id,ba
     db.refresh(db_coach)
     return db_coach
 
-def create_coach_organization(coach_id: int, org_id: int, coach_status:str,db: _orm.Session):
+def create_coach_organization(coach_id: int, org_id: int, coach_status:str,own_coach_id,db: _orm.Session):
     db_coach_org = _models.CoachOrganization(
         coach_id=coach_id,
         org_id=org_id,
-        coach_status=coach_status
+        coach_status=coach_status,
+        own_coach_id=own_coach_id,
     )
     db.add(db_coach_org)
     db.commit()
@@ -240,11 +249,27 @@ def create_client_coach_mappings(coach_id: int, member_ids: List[int], db: _orm.
 async def create_coach(coach: _schemas.CoachCreate,user_id, db: _orm.Session=_fastapi.Depends(get_db)):
     coach_db = await get_coach_by_email(coach.email,db=db)
     if coach_db:
+        if coach.org_id in coach_db.org_ids:
+            print("coach exists within the same organization")
             raise _fastapi.HTTPException(status_code=400, detail="Email already registered")
+        else:
+            print("coach does not exist within the same organization")
+            db_bank_detail = create_bank_detail(coach,user_id,db)
+            db_coach = update_app_coach_record(coach_db.id,coach,db)
+            create_coach_organization(coach_db.id, coach.org_id, coach.coach_status,coach.own_coach_id,db)
+            if coach.member_ids:
+                create_client_coach_mappings(coach_db.id, coach.member_ids, db)
+        
+            return {
+                "status_code": "201",
+                "id": coach_db.id,
+                "message": "Coach created successfully"
+            }
+
         
     db_bank_detail = create_bank_detail(coach,user_id,db)
     db_coach = create_coach_record(coach, db,user_id,db_bank_detail.id)
-    create_coach_organization(db_coach.id, coach.org_id, coach.coach_status ,db)
+    create_coach_organization(db_coach.id, coach.org_id, coach.coach_status,coach.own_coach_id ,db)
 
     if coach.member_ids:
         create_client_coach_mappings(db_coach.id, coach.member_ids, db)
@@ -355,11 +380,14 @@ def update_coach_organization(coach_id: int, org_id: int, coach_status: str, db:
 
 
 async def update_coach(coach_id:int , coach: _schemas.CoachUpdate,Type:str,user_id,db: _orm.Session):
-
-    db_coach = db.query(_models.Coach).filter(
-        _models.Coach.id == coach_id, _models.Coach.is_deleted == False
-    ).first()
-    
+    print("MY DB 2",coach_id,coach)
+    db_coach = db.query(
+            _models.Coach
+        ).join(
+            _models.CoachOrganization, and_(_models.Coach.id == _models.CoachOrganization.coach_id,_models.CoachOrganization.org_id==coach.org_id,_models.CoachOrganization.is_deleted==False)
+        ).first()
+        
+    print("MY DB",db_coach)
     if not db_coach:
         return None
 
@@ -380,18 +408,25 @@ async def update_coach(coach_id:int , coach: _schemas.CoachUpdate,Type:str,user_
         return db_coach
     return db_coach
 
-def delete_coach(coach_id: int,user_id,db: _orm.Session):
-    db_coach = db.query(models.Coach).filter(models.Coach.id == coach_id).first()
+def delete_coach(coach_id: int, org_id: int, db: _orm.Session):
+    db_coach = db.query(_models.CoachOrganization).filter(
+        and_(
+            _models.CoachOrganization.coach_id == coach_id,
+            _models.CoachOrganization.org_id == org_id
+        )
+    ).first()
+
     if db_coach:
         db_coach.is_deleted = True
-        db_coach.updated_by=user_id
-        db_coach.updated_at=dt.now()
         db.commit()
         db.refresh(db_coach)
+        return {"status": "201", "detail": "Coach deleted successfully"}
+    else:
+        raise _fastapi.HTTPException(status_code=404, detail="Coach not found")
 
     return {"status":"201","detail":"Coach deleted successfully"}
 
-def get_coach_by_id(coach_id: int, db: _orm.Session):
+def get_coach_by_id(coach_id: int,org_id:int,db: _orm.Session):
     
     CoachOrg = aliased(_models.CoachOrganization)
     BankDetail = aliased(_usermodels.Bank_detail)
@@ -401,6 +436,8 @@ def get_coach_by_id(coach_id: int, db: _orm.Session):
         *_models.Coach.__table__.columns,
         CoachOrg.coach_status,
         CoachOrg.org_id,
+        CoachOrg.check_in,     
+        CoachOrg.own_coach_id,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
@@ -415,8 +452,8 @@ def get_coach_by_id(coach_id: int, db: _orm.Session):
                 )
             )
         ).label('members')
-    ).outerjoin(
-        CoachOrg, _models.Coach.id == CoachOrg.coach_id
+    ).join(
+        CoachOrg, and_(_models.Coach.id == CoachOrg.coach_id,CoachOrg.org_id==org_id,CoachOrg.is_deleted==False)
     ).outerjoin(
         BankDetail, _models.Coach.bank_detail_id == BankDetail.id
     ).outerjoin(
@@ -430,6 +467,8 @@ def get_coach_by_id(coach_id: int, db: _orm.Session):
         _models.Coach.id,
         CoachOrg.coach_status,
         CoachOrg.org_id,
+        CoachOrg.check_in,     
+        CoachOrg.own_coach_id,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
@@ -526,13 +565,15 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         *_models.Coach.__table__.columns,
         CoachOrg.coach_status,
         CoachOrg.org_id,
+        CoachOrg.check_in,     
+        CoachOrg.own_coach_id,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
         BankDetail.swift_code,
         func.array_agg(func.coalesce(ClientCoach.client_id, 0)).label('members')
     ).select_from(_models.Coach).join(
-        CoachOrg, _models.Coach.id == CoachOrg.coach_id
+        CoachOrg, and_(_models.Coach.id == CoachOrg.coach_id,CoachOrg.org_id==org_id,CoachOrg.is_deleted==False)
     ).outerjoin(
         BankDetail, _models.Coach.bank_detail_id == BankDetail.id
     ).outerjoin(
@@ -546,6 +587,8 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         _models.Coach.id,
         CoachOrg.coach_status,
         CoachOrg.org_id,
+        CoachOrg.check_in,     
+        CoachOrg.own_coach_id,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,

@@ -13,7 +13,6 @@ class CoachBase(pydantic.BaseModel):
     wallet_address: Optional[str] = None 
     org_id: Optional[int] = None
     coach_status: Optional[CoachStatus]="active"
-    own_coach_id: Optional[str] = None
     profile_img: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -30,15 +29,14 @@ class CoachBase(pydantic.BaseModel):
     zipcode: Optional[str] = None
     address_1: Optional[str] = None
     address_2: Optional[str] = None
-    check_in: Optional[datetime.datetime] = None
-    last_online: Optional[datetime.datetime] = None
-    coach_since: Optional[datetime.datetime] = None
     bank_name: Optional[str] = None
     iban_no: Optional[str] = None
     acc_holder_name: Optional[str] = None
     swift_code: Optional[str] = None
 
 class CoachCreate(CoachBase):
+    own_coach_id: Optional[str] = None
+    is_deleted: Optional[bool] = False
     member_ids: Optional[List[int]] = None
 
 class CoachUpdate(CoachBase):
@@ -81,7 +79,6 @@ class CoachAppBase(pydantic.BaseModel):
     zipcode: Optional[str] = None
     address_1: Optional[str] = None
     address_2: Optional[str] = None
-    coach_since: Optional[datetime.date] = None
     bank_name: Optional[str] = None
     iban_no: Optional[str] = None
     is_deleted: Optional[bool] = False
@@ -92,7 +89,6 @@ class CoachAppBase(pydantic.BaseModel):
     coach_status: Optional[CoachStatus] = None
     check_in: Optional[datetime.datetime] = None
     last_online: Optional[datetime.datetime] = None
-    coach_since: Optional[datetime.datetime] = None
 
 class CoachLogin(pydantic.BaseModel):
     email_address: str
@@ -131,7 +127,6 @@ class CoachNewAppRead(CoachBase):
     organizations:Optional[List[CoachOrganizationResponse]]=[]
     check_in: Optional[datetime.datetime] = None
     last_online: Optional[datetime.datetime] = None
-    coach_since: Optional[datetime.datetime] = None
     bank_name: Optional[str] = None
     iban_no: Optional[str] = None
     acc_holder_name: Optional[str] = None
@@ -178,7 +173,6 @@ class CoachReadSchema(pydantic.BaseModel):
     address_2: Optional[str] = None
     check_in: Optional[datetime.datetime] = None
     last_online: Optional[datetime.datetime] = None
-    coach_since: Optional[datetime.datetime] = None
     coach_status: Optional[CoachStatus] = None
     org_id: Optional[int] = None
     bank_name: Optional[str] = None
@@ -216,7 +210,6 @@ class CoachResponse(pydantic.BaseModel):
     address_2: Optional[str]
     check_in: Optional[datetime.datetime]
     last_online: Optional[datetime.datetime]
-    coach_since: Optional[datetime.datetime]
     bank_detail_id: Optional[int]
     created_at: Optional[datetime.datetime]
     updated_at: Optional[datetime.datetime]

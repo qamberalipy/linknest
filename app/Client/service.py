@@ -190,7 +190,7 @@ async def get_client_by_email(
         _models.Client.email,
         func.array_agg(_models.ClientOrganization.org_id).label('org_ids')
     ).join(
-        _models.ClientOrganization, _models.ClientOrganization.client_id == _models.Client.id
+        _models.ClientOrganization, and_(_models.ClientOrganization.client_id == _models.Client.id,_models.ClientOrganization.is_deleted==False)
     ).filter(
         _models.Client.email == email_address
     ).group_by(
@@ -302,9 +302,15 @@ async def update_app_client(
     db: _orm.Session = _fastapi.Depends(get_db),
 ):
     db_client = db.query(_models.Client).filter(_models.Client.id == client_id).first()
-
+    # db_client = db.query(
+    #         _models.Client
+    #     ).join(
+    #         _models.ClientOrganization, and_(_models.ClientOrganization.client_id==client_id,_models.ClientOrganization.org_id==client.org_id,_models.ClientOrganization.is_deleted==False)
+    #     ).first()
+        
     if not db_client:
         raise _fastapi.HTTPException(status_code=404, detail="Member not found")
+    
     client.is_deleted=False
     for key, value in client.dict(exclude_unset=True).items():
         setattr(db_client, key, value)
@@ -586,6 +592,7 @@ def get_filtered_clients(
 
 
 async def get_client_byid(db: _orm.Session, client_id: int,org_id:int) -> _schemas.ClientByID:
+    print("MY ORG",org_id)
     query = db.query(
             *_models.Client.__table__.columns,
             _models.ClientOrganization.org_id,
