@@ -586,16 +586,24 @@ def delete_sale_tax(sale_tax_id: int,user_id,db: _orm.Session):
     return {"status":"201","detail":"Sale Tax deleted successfully"}
 
 
-def create_group(group: _schemas.GroupCreate,user_id,db: _orm.Session):
+def create_group(group: _schemas.GroupCreate, user_id, db: _orm.Session):
+    # Check if a group with the same org_id and name already exists
+    check_group = db.query(_models.Membership_group.id).filter(
+        and_(
+            _models.Membership_group.org_id == group.org_id,
+            _models.Membership_group.name == group.name
+        )
+    ).first()  # Use .first() to execute the query and get the first result
 
-    check_group=db.query(_models.Membership_group.id).filter(and_(_models.Membership_group.org_id==group.org_id,_models.Membership_group.name==group.name))
     if check_group:
-        raise _fastapi.HTTPException(status_code=404, detail="Group already exists")
+        raise _fastapi.HTTPException(status_code=400, detail="Group already exists")
 
-    group=group.model_dump()
-    group["created_by"]=user_id
-    group["updated_by"]=user_id
+    # Prepare the group data
+    group = group.model_dump()
+    group["created_by"] = user_id
+    group["updated_by"] = user_id
 
+    # Create the group
     db_group = _models.Membership_group(**group)
     db.add(db_group)
     db.commit()

@@ -207,14 +207,13 @@ async def get_business_clients(
     org_id: int, db: _orm.Session = _fastapi.Depends(get_db)
 ):
     clients = (
-        db.query(models.Client.id, models.Client.first_name)
+        db.query(_models.Client.id, _models.Client.first_name).select_from(_models.Client)
         .join(
-            models.ClientOrganization,
-            models.ClientOrganization.client_id == models.Client.id,
+            _models.ClientOrganization,
+            and_(_models.ClientOrganization.client_id == _models.Client.id, _models.ClientOrganization.org_id == org_id,_models.ClientOrganization.is_deleted == False)
         )
         .filter(
-            models.ClientOrganization.org_id == org_id,
-            models.Client.is_business == True,
+            models.Client.is_business == True
         )
         .all()
     )

@@ -332,13 +332,15 @@ def update_bank_detail(coach: _schemas.CoachUpdate,user_id,db: _orm.Session, db_
 
     return db_bank_detail
 
-def update_coach_record(coach: _schemas.CoachUpdate, db: _orm.Session,user_id,db_coach):
-    for field, value in coach.dict(exclude_unset=True).items():
+def update_coach_record(coach: _schemas.CoachUpdate, db: _orm.Session, user_id, db_coach):
+    # Exclude the `id` field by passing it as a set
+    for field, value in coach.dict(exclude_unset=True, exclude={"id"}).items():
         if hasattr(db_coach, field):
             setattr(db_coach, field, value)
     
     db_coach.updated_by = user_id
-    db_coach.updated_at=dt.now()
+    db_coach.updated_at = dt.now()
+    
     db.add(db_coach)
     db.commit()
     db.refresh(db_coach)
