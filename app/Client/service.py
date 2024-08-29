@@ -555,21 +555,8 @@ def get_filtered_clients(
         search_pattern = f"%{params.search_key}%"
         query = query.filter(
             or_(
-                _models.Client.wallet_address.ilike(search_pattern),
-                _models.Client.profile_img.ilike(search_pattern),
-                _models.ClientOrganization.own_member_id.ilike(search_pattern),
                 _models.Client.first_name.ilike(search_pattern),
                 _models.Client.last_name.ilike(search_pattern),
-                _models.Client.gender.ilike(search_pattern),
-                _models.Client.email.ilike(search_pattern),
-                _models.Client.phone.ilike(search_pattern),
-                _models.Client.mobile_number.ilike(search_pattern),
-                _models.Client.notes.ilike(search_pattern),
-                _models.Client.language.ilike(search_pattern),
-                _models.Client.city.ilike(search_pattern),
-                _models.Client.zipcode.ilike(search_pattern),
-                _models.Client.address_1.ilike(search_pattern),
-                _models.Client.address_2.ilike(search_pattern),
             )
         )
     
