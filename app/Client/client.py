@@ -86,7 +86,7 @@ async def register_client(
                     _schemas.CreateClientMembership(
                         client_id=updated_client.id, membership_plan_id=membership_id,
                         auto_renewal=auto_renewal, prolongation_period=prolongation_period, 
-                        auto_renew_days=auto_renew_days, inv_days_cycle=inv_days_cycle
+                        auto_renew_days=auto_renew_days, inv_days_cycle=inv_days_cycle,org_id=organization_id
                     ), db
                 )
 
@@ -115,7 +115,7 @@ async def register_client(
             _schemas.CreateClientMembership(
                 client_id=new_client.id, membership_plan_id=membership_id,
                 auto_renewal=auto_renewal, prolongation_period=prolongation_period, 
-                auto_renew_days=auto_renew_days, inv_days_cycle=inv_days_cycle
+                auto_renew_days=auto_renew_days, inv_days_cycle=inv_days_cycle,org_id=organization_id
             ), db
         )
 
@@ -155,7 +155,8 @@ async def update_client(client: _schemas.ClientUpdate,request:Request, db: _orm.
             auto_renewal=client.auto_renewal,
             prolongation_period=client.prolongation_period,
             auto_renew_days=client.auto_renew_days,
-            inv_days_cycle=client.inv_days_cycle
+            inv_days_cycle=client.inv_days_cycle,
+            org_id=client.org_id,
             )
             await _services.update_client_membership(membership, db)
 

@@ -46,4 +46,5 @@ class CoachOrganization(_database.Base):
     own_coach_id = _sql.Column(_sql.String, nullable=True)
     org_id = _sql.Column(_sql.Integer)
     coach_status = _sql.Column(_sql.Enum(CoachStatus))
+    activated_on = _sql.Column(_sql.Date)
     is_deleted = _sql.Column(_sql.Boolean, default=False)

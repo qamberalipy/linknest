@@ -217,7 +217,7 @@ async def register_mobileclient(client: ClientCreateApp, db: _orm.Session = Depe
 
         await _client_service.create_client_membership(
             CreateClientMembership(
-                client_id=new_client.id, membership_plan_id=membership_id
+                client_id=new_client.id, membership_plan_id=membership_id,org_id=organization_id
             ),
             db,
         )

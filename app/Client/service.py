@@ -261,7 +261,7 @@ async def update_client_membership(
     )
     if not db_client_membership:
         db_client_membership = _models.ClientMembership(
-            client_id=membership_data.client_id, membership_plan_id=membership_data.membership_plan_id
+            client_id=membership_data.client_id, membership_plan_id=membership_data.membership_plan_id,org_id=membership_data.org_id
         )
         db.add(db_client_membership)
     else:
@@ -521,7 +521,7 @@ def get_filtered_clients(
     ).join(
         _models.ClientOrganization, and_(_models.Client.id == _models.ClientOrganization.client_id,_models.ClientOrganization.org_id==org_id,_models.ClientOrganization.is_deleted==False)
     ).join(
-        _models.ClientMembership, _models.Client.id == _models.ClientMembership.client_id
+        _models.ClientMembership,and_( _models.Client.id == _models.ClientMembership.client_id,_models.ClientMembership.org_id==org_id)
     ).filter(
         _models.Client.is_deleted == False
     ).group_by(
@@ -624,7 +624,7 @@ async def get_client_byid(db: _orm.Session, client_id: int,org_id:int) -> _schem
         ).join(
             _models.ClientOrganization, and_(_models.Client.id == _models.ClientOrganization.client_id,_models.ClientOrganization.org_id==org_id,_models.ClientOrganization.is_deleted==False)
         ).outerjoin(
-            _models.ClientMembership, _models.Client.id == _models.ClientMembership.client_id
+            _models.ClientMembership, and_(_models.Client.id == _models.ClientMembership.client_id,_models.ClientMembership.org_id==org_id)
         ).filter(
             _models.Client.id == client_id,
             _models.Client.is_deleted == False,

@@ -211,6 +211,7 @@ class ClientMembership(pydantic.BaseModel):
     prolongation_period:Optional[int] = None
     auto_renew_days:Optional[int] = None
     inv_days_cycle:Optional[int] = None
+    org_id:Optional[int] = None
 
 
 class CreateClientMembership(ClientMembership):

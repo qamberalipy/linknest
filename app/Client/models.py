@@ -67,6 +67,7 @@ class ClientMembership(_database.Base):
     prolongation_period = _sql.Column(_sql.Integer)
     auto_renew_days = _sql.Column(_sql.Integer)
     inv_days_cycle = _sql.Column(_sql.Integer)
+    org_id = _sql.Column(_sql.Integer)
     is_deleted= _sql.Column(_sql.Boolean, default=False)
     
     

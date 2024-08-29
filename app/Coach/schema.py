@@ -181,6 +181,9 @@ class CoachReadSchema(pydantic.BaseModel):
     swift_code: Optional[str] = None
     created_at: Optional[datetime.datetime] = None
     members: Optional[List[CoachList]] = []
+    activated_on: Optional[datetime.date] = None
+   
+    
     
     class Config:
         from_attributes = True
@@ -223,6 +226,6 @@ class CoachResponse(pydantic.BaseModel):
     acc_holder_name: Optional[str]
     swift_code: Optional[str]
     members: List[int]
-
+    activated_on: Optional[datetime.date] = None
     class Config:
         from_attributes = True

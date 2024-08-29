@@ -458,6 +458,7 @@ def get_coach_by_id(coach_id: int,org_id:int,db: _orm.Session):
         CoachOrg.org_id,
         CoachOrg.check_in,     
         CoachOrg.own_coach_id,
+        CoachOrg.activated_on,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
@@ -489,6 +490,7 @@ def get_coach_by_id(coach_id: int,org_id:int,db: _orm.Session):
         CoachOrg.org_id,
         CoachOrg.check_in,     
         CoachOrg.own_coach_id,
+        CoachOrg.activated_on,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
@@ -574,11 +576,12 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
     sort_mapping = {
         "first_name": text("coach.first_name"),
         "last_name": text("coach.last_name"),
-        "coach_status": text("coach_status"),
-        "own_coach_id": text("coach.own_coach_id"),
+        "coach_status": text("CoachOrganization.coach_status"),
+        "own_coach_id": text("CoachOrganization.own_coach_id"),
         "last_online": text("coach.last_online"),
         "check_in": text("coach.check_in"),
-        "created_at":text("coach.created_at")
+        "created_at":text("coach.created_at"),
+        "activated_on":text("CoachOrganization.activated_on")
     }
     # Main query
     query = db.query(
@@ -587,6 +590,7 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         CoachOrg.org_id,
         CoachOrg.check_in,     
         CoachOrg.own_coach_id,
+        CoachOrg.activated_on,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
@@ -609,6 +613,7 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         CoachOrg.org_id,
         CoachOrg.check_in,     
         CoachOrg.own_coach_id,
+        CoachOrg.activated_on,
         BankDetail.bank_name,
         BankDetail.iban_no,
         BankDetail.acc_holder_name,
@@ -623,7 +628,7 @@ def get_all_coaches_by_org_id(org_id: int, db: _orm.Session, params: _schemas.Co
         query = query.filter(or_(
             _models.Coach.first_name.ilike(f"%{params.search_key}%"),
             _models.Coach.last_name.ilike(f"%{params.search_key}%"),
-            _models.Coach.own_coach_id.ilike(f"%{params.search_key}%"),
+            _models.CoachOrganization.own_coach_id.ilike(f"%{params.search_key}%"),
             _models.Coach.email.ilike(f"%{params.search_key}%"),
             _models.Coach.mobile_number.ilike(f"%{params.search_key}%"),
             _models.Coach.gender.ilike(f"%{params.search_key}%"),
