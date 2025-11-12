@@ -1,274 +1,107 @@
 import datetime as _dt
-from datetime import date
+from enum import Enum as PyEnum
 import sqlalchemy as _sql
 import sqlalchemy.orm as _orm
+from sqlalchemy.sql import func
 import app.core.db.session as _database
 import bcrypt as _bcrypt
-import sqlalchemy.ext.declarative as _declarative
-from enum import Enum as PyEnum
 
-class StaffStatus(str,PyEnum):
-    active='active'
-    inactive='inactive'
-    pending='pending'    
-    
-class RoleStatus(str,PyEnum):
-    active='active'
-    inactive='inactive'
-         
+class RoleStatus(str, PyEnum):
+    active = "active"
+    inactive = "inactive"
+
+class AccountStatus(str, PyEnum):
+    active = "active"
+    suspended = "suspended"
+    deleted = "deleted"
+
+
+class AuthProvider(str, PyEnum):
+    local = "local"
+    google = "google"
+
 class User(_database.Base):
-    __tablename__ = "staff"
+    __tablename__ = "staff"  # kept same name as your original; change to 'users' if preferred
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    own_staff_id=_sql.Column(_sql.String)
-    profile_img = _sql.Column(_sql.String(150))
-    password = _sql.Column(_sql.String(100))
-    first_name = _sql.Column(_sql.String(50))
-    last_name = _sql.Column(_sql.String(50))
-    gender = _sql.Column(_sql.String(10))
-    dob = _sql.Column(_sql.DateTime)
-    email = _sql.Column(_sql.String(100), index=True)
-    phone = _sql.Column(_sql.String(11))
-    activated_on = _sql.Column(_sql.Date)
-    reset_token=_sql.Column(_sql.String)
-    last_checkin = _sql.Column(_sql.DateTime)
-    last_online = _sql.Column(_sql.DateTime)
-    status = _sql.Column(_sql.Enum(StaffStatus))
-    phone = _sql.Column(_sql.String(20))  # Assuming phone number should not include landline
-    mobile_number = _sql.Column(_sql.String(20))
-    notes = _sql.Column(_sql.String)
-    source_id = _sql.Column(_sql.Integer)
-    org_id =_sql.Column(_sql.Integer)
-    role_id = _sql.Column(_sql.Integer)
-    country_id = _sql.Column(_sql.Integer)
-    city = _sql.Column(_sql.String(20))
-    zipcode = _sql.Column(_sql.String)
-    address_1 = _sql.Column(_sql.String(100))
-    address_2 = _sql.Column(_sql.String)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    created_by = _sql.Column(_sql.Integer)
-    updated_by = _sql.Column(_sql.Integer)
-    is_deleted = _sql.Column(_sql.Boolean, default=False)
-    
-    def verify_password(self, password: bytes):
-        if self.password is not None:
-            print("In Verify Password", password, self.password.encode('utf-8'))
-            return _bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
-        else:
-            False
+
+    # identity & profile
+    username = _sql.Column(_sql.String(50), unique=True, nullable=True, index=True)  # optional public handle
+    email = _sql.Column(_sql.String(100), unique=True, nullable=False, index=True)
+    full_name = _sql.Column(_sql.String(100), nullable=True)
+    profile_picture_url = _sql.Column(_sql.String(255), nullable=True)  # renamed from profile_img
+    bio = _sql.Column(_sql.Text, nullable=True)
+
+    # authentication & oauth
+    password_hash = _sql.Column(_sql.String(255), nullable=True)  # nullable for OAuth users
+    auth_provider = _sql.Column(_sql.Enum(AuthProvider, name="auth_provider"), nullable=False, default=AuthProvider.local)
+    google_id = _sql.Column(_sql.String(255), nullable=True)  # store Google 'sub' if using Google OAuth
+    is_verified = _sql.Column(_sql.Boolean, default=False, nullable=False)  # email verified flag
+    reset_token = _sql.Column(_sql.String(255), nullable=True)  # password reset token (if you use one)
+
+    # status & role
+    account_status = _sql.Column(_sql.Enum(AccountStatus, name="account_status"), default=AccountStatus.active, nullable=False)
+    profile_type_id = _sql.Column(_sql.Integer, nullable=True)
+
+    # contact & address
+    phone = _sql.Column(_sql.String(20), nullable=True)          # general phone
+    mobile_number = _sql.Column(_sql.String(20), nullable=True)  # mobile
+    country_id = _sql.Column(_sql.Integer, nullable=True)
+    city = _sql.Column(_sql.String(50), nullable=True)
+    zipcode = _sql.Column(_sql.String(20), nullable=True)
+    address_1 = _sql.Column(_sql.String(255), nullable=True)
+    address_2 = _sql.Column(_sql.String(255), nullable=True)
+
+    # activity & metadata
+    dob = _sql.Column(_sql.Date, nullable=True)
+    last_checkin = _sql.Column(_sql.DateTime, nullable=True)
+    last_online = _sql.Column(_sql.DateTime, nullable=True)
+    last_login = _sql.Column(_sql.DateTime, nullable=True)
+
+    # subscription / customization
+    plan_type_id = _sql.Column(_sql.Integer, nullable=False, default=1)  # default to 'free' plan
+    theme_id = _sql.Column(_sql.Integer, nullable=True)
+    custom_domain = _sql.Column(_sql.String(255), nullable=True)
+
+    # auditing timestamps (use DB/server defaults so they update correctly)
+    created_at = _sql.Column(_sql.DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = _sql.Column(_sql.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # soft delete
+    is_deleted = _sql.Column(_sql.Boolean, default=False, nullable=False)
+
+    # simple helper for password verification
+    def verify_password(self, plain_password: str) -> bool:
+        """Verify plain password against stored password_hash. Returns False if no password stored."""
+        if not self.password_hash:
+            return False
+        try:
+            return _bcrypt.checkpw(plain_password.encode("utf-8"), self.password_hash.encode("utf-8"))
+        except Exception:
+            return False
+
 
 class Country(_database.Base):
     __tablename__ = "country"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    country = _sql.Column(_sql.String)
-    country_code = _sql.Column(_sql.Integer)
-    is_deleted= _sql.Column(_sql.Boolean, default=False)
-    
+    country = _sql.Column(_sql.String(100), nullable=False)
+    country_code = _sql.Column(_sql.String(10), nullable=True)
+    is_deleted = _sql.Column(_sql.Boolean, default=False, nullable=False)
+
+
 class Source(_database.Base):
     __tablename__ = "source"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    source = _sql.Column(_sql.String)
-           
-class Organization(_database.Base):
-    __tablename__ = "organization"
+    source = _sql.Column(_sql.String(150), nullable=False)
+
+class Profile_type(_database.Base):
+    __tablename__ = "profile_type"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    name = _sql.Column(_sql.String)
-    email = _sql.Column(_sql.String)
-    profile_img = _sql.Column(_sql.String(150))  
-    business_type = _sql.Column(_sql.String(150))
-    description = _sql.Column(_sql.String)
-    address = _sql.Column(_sql.String(100)) 
-    zipcode = _sql.Column(_sql.String(10))
-    country_id = _sql.Column(_sql.Integer)
-    city = _sql.Column(_sql.String(20))
-    facebook_page_url=_sql.Column(_sql.String)
-    website_url=_sql.Column(_sql.String)
-    timezone = _sql.Column(_sql.String(20))
-    language =_sql.Column(_sql.String(20))
-    company_reg_no =_sql.Column(_sql.String(20))
-    vat_reg_no =_sql.Column(_sql.String(20))
-    club_key=_sql.Column(_sql.String)
-    api_key=_sql.Column(_sql.String)
-    hide_for_nonmember= _sql.Column(_sql.Boolean, default=False)
-    opening_hours=_sql.Column(_sql.JSON)
-    opening_hours_notes=_sql.Column(_sql.String)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    created_by = _sql.Column(_sql.Integer)
-    updated_by = _sql.Column(_sql.Integer)
-    is_deleted= _sql.Column(_sql.Boolean, default=False)
+    name = _sql.Column(_sql.String(50), nullable=False)
+    is_deleted = _sql.Column(_sql.Boolean, default=False, nullable=False)
 
-class UserRole(_database.Base):
-    __tablename__ = "user_role_mapping"
+class Plan_type(_database.Base):
+    __tablename__ = "plan_type"
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    user_id=_sql.Column(_sql.Integer)
-    role_id=_sql.Column(_sql.Integer)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    created_by = _sql.Column(_sql.Integer)
-    updated_by = _sql.Column(_sql.Integer)
-    is_deleted=_sql.Column(_sql.Boolean)
-
-# class Role(_database.Base):
-#     __tablename__ = "role"
-#     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-#     name = _sql.Column(_sql.String(50))
-#     org_id = _sql.Column(_sql.Integer)
-#     status = _sql.Column(_sql.Boolean)
-#     is_deleted=_sql.Column(_sql.Boolean)
-
-
-# class Resource(_database.Base):
-#     __tablename__ = "resource"
-#     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-#     name=_sql.Column(_sql.String(50))
-#     code=_sql.Column(_sql.String(50))
-#     parent = _sql.Column(_sql.String(50))
-#     is_parent = _sql.Column(_sql.Boolean)
-#     is_root = _sql.Column(_sql.Boolean)
-#     link = _sql.Column(_sql.String(50))
-#     icon = _sql.Column(_sql.String(50))
-#     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-#     updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-#     created_by = _sql.Column(_sql.Integer)
-#     updated_by = _sql.Column(_sql.Integer)
-#     is_deleted=_sql.Column(_sql.Boolean)
-
-#     # self join of parent with code
-#     rel_parent = _orm.relationship(
-#         "Resource",
-#         lazy="select",
-#         primaryjoin="foreign(Resource.parent)==Resource.code",
-#         remote_side=[code],
-#         back_populates="children"
-#     )
-#     children = _orm.relationship(
-#         "Resource",
-#         lazy="select",
-#         primaryjoin="Resource.code==foreign(Resource.parent)",
-#         remote_side=[parent],
-#         back_populates="rel_parent"
-#     )
-    
-
-# class Permission(_database.Base):
-#     __tablename__ = 'permission'
-#     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-#     role_id= _sql.Column(_sql.Integer)
-#     resource_id= _sql.Column(_sql.Integer)
-#     access_type = _sql.Column(_sql.String(50))
-#     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-#     updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-#     created_by = _sql.Column(_sql.Integer)
-#     updated_by = _sql.Column(_sql.Integer)
-#     is_deleted=_sql.Column(_sql.Boolean)
-
-class Role(_database.Base):
-    __tablename__ = "role"
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    name = _sql.Column(_sql.String(50))
-    org_id = _sql.Column(_sql.Integer)
-    status = _sql.Column(_sql.Enum(RoleStatus))
-    is_deleted = _sql.Column(_sql.Boolean)
-    
-    # permissions = _orm.relationship(
-    #     "Permission",
-    #     back_populates="role",
-    #     primaryjoin="Permission.role_id==foreign(Role.id)",
-    #     lazy="select"
-    # )
-
-
-class Resource(_database.Base):
-    __tablename__ = "resource"
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    name = _sql.Column(_sql.String(50))
-    code = _sql.Column(_sql.String(50))
-    parent = _sql.Column(_sql.String(50))
-    is_parent = _sql.Column(_sql.Boolean)
-    is_root = _sql.Column(_sql.Boolean)
-    link = _sql.Column(_sql.String(50))
-    icon = _sql.Column(_sql.String(50))
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    created_by = _sql.Column(_sql.Integer)
-    updated_by = _sql.Column(_sql.Integer)
-    is_deleted = _sql.Column(_sql.Boolean)
-
-    # self join of parent with code
-    rel_parent = _orm.relationship(
-        "Resource",
-        lazy="select",
-        primaryjoin="foreign(Resource.parent)==Resource.code",
-        remote_side=[code],
-        back_populates="children"
-    )
-    children = _orm.relationship(
-        "Resource",
-        lazy="select",
-        primaryjoin="Resource.code==foreign(Resource.parent)",
-        remote_side=[parent],
-        back_populates="rel_parent"
-    )
-
-    # permissions = _orm.relationship(
-    #     "Permission",
-    #     back_populates="resource",
-    #     primaryjoin="Resource.id==foreign(Permission.resource_id)",
-    #     lazy="select"
-    # )
-
-
-class Permission(_database.Base):
-    __tablename__ = 'permission'
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    role_id = _sql.Column(_sql.Integer)
-    resource_id = _sql.Column(_sql.Integer)
-    access_type = _sql.Column(_sql.String(50))
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    created_by = _sql.Column(_sql.Integer)
-    updated_by = _sql.Column(_sql.Integer)
-    is_deleted = _sql.Column(_sql.Boolean)
-
-    # role = _orm.relationship(
-    #     "Role",
-    #     primaryjoin="Permission.role_id==foreign(Role.id)",
-    #     back_populates="permissions",
-    #     lazy="select"
-    # )
-    # resource = _orm.relationship(
-    #     "Resource",
-    #     primaryjoin="Resource.id==foreign(Permission.resource_id)",
-    #     back_populates="permissions"
-    # )
-
-    
-class Bank_detail(_database.Base):
-    __tablename__ = 'bank_detail'
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    org_id= _sql.Column(_sql.Integer)
-    user_type= _sql.Column(_sql.String)
-    bank_name = _sql.Column(_sql.String(50))
-    iban_no = _sql.Column(_sql.String(50))
-    acc_holder_name = _sql.Column(_sql.String(50))
-    swift_code = _sql.Column(_sql.String(50))
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    updated_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now())
-    created_by = _sql.Column(_sql.Integer)
-    updated_by = _sql.Column(_sql.Integer)
-    is_deleted=_sql.Column(_sql.Boolean)    
-    
-class Transaction(_database.Base):
-    __tablename__ = 'transaction'
-
-    id = _sql.Column(_sql.Integer, primary_key=True, server_default=_sql.text("nextval('transaction_id_seq'::regclass)"), autoincrement=True)
-    transaction_hash = _sql.Column(_sql.String, unique=True)
-    _from = _sql.Column('from', _sql.String)
-    to = _sql.Column(_sql.String)
-    value = _sql.Column(_sql.String)
-    event_type = _sql.Column(_sql.String)
-    status = _sql.Column(_sql.Enum('pending', 'success', 'failed', name='TransactionEnums'), nullable=False, server_default=_sql.text("'pending'::\"TransactionEnums\""))
-    created_at = _sql.Column(_sql.TIMESTAMP, nullable=False, server_default=_sql.text("CURRENT_TIMESTAMP"))
-    updated_at = _sql.Column(_sql.TIMESTAMP, nullable=False, server_default=_sql.text("CURRENT_TIMESTAMP"))
+    name = _sql.Column(_sql.String(50), nullable=False)
+    is_deleted = _sql.Column(_sql.Boolean, default=False, nullable=False)

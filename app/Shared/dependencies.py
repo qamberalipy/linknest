@@ -7,7 +7,6 @@ from app.user.models import Permission, Resource, Role
 from .schema import PaginationOptions
 
 from ..core.db import session as _database
-from ..Client import service as _client_service
 
 
 def get_db():
@@ -20,9 +19,6 @@ def get_db():
 
 async def get_user(request: Request, db: Annotated[Session, Depends(get_db)]):
     return request.state.user
-
-
-# return await _client_service.get_client_by_email(request.state.user['email'], db)
 
 
 def get_pagination_options(

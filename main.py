@@ -25,15 +25,6 @@ from dotenv import load_dotenv
 from starlette.status import HTTP_401_UNAUTHORIZED
 from app.core.main_router import router as main_router
 from app.user import user_router
-from app.Client import client_router
-from app.MealPlan import mealplan_router
-from app.Membership import membership_router
-from app.Coach import coach_router
-from app.Event import event_router
-from app.Exercise import exercise_router
-from app.Leads import leads_router
-from app.Food import food_router
-from app.Workout import workout_router
 from app.Shared.helpers import verify_jwt
 
 load_dotenv(".env")
@@ -78,15 +69,6 @@ app.add_middleware(
 
 app.include_router(main_router)
 root_router.include_router(user_router)
-root_router.include_router(client_router)
-root_router.include_router(coach_router)
-root_router.include_router(membership_router)
-root_router.include_router(event_router)
-root_router.include_router(leads_router)
-root_router.include_router(mealplan_router)
-root_router.include_router(food_router)
-root_router.include_router(exercise_router)
-root_router.include_router(workout_router)
 app.include_router(root_router)
 
 AUTH_BASE_URL = os.environ.get("AUTH_BASE_URL")
