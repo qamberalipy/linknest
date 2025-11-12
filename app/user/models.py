@@ -37,7 +37,7 @@ class User(_database.Base):
     auth_provider = _sql.Column(_sql.Enum(AuthProvider, name="auth_provider"), nullable=False, default=AuthProvider.local)
     google_id = _sql.Column(_sql.String(255), nullable=True)  # store Google 'sub' if using Google OAuth
     is_verified = _sql.Column(_sql.Boolean, default=False, nullable=False)  # email verified flag
-    reset_token = _sql.Column(_sql.String(255), nullable=True)  # password reset token (if you use one)
+    reset_otp = _sql.Column(_sql.Integer, nullable=True)  # password reset OTP (if you use one)
 
     # status & role
     account_status = _sql.Column(_sql.Enum(AccountStatus, name="account_status"), default=AccountStatus.active, nullable=False)
