@@ -78,7 +78,7 @@ def create_otp(length: int = 6) -> str:
 
 # ----------------- Brevo Email -----------------
 def send_email(recipient_email: str, subject: str, html_text: str, otp: str) -> bool:
-
+    print("API Key:", BREVO_API_KEY)
     html_body= generate_otp_email_html(otp, html_text)
     url = "https://api.brevo.com/v3/smtp/email"
     
