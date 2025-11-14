@@ -39,9 +39,9 @@ def send_otp(payload: _schemas.SendOtpReq, db: Session = Depends(_services.get_d
 
     otp = _helpers.create_otp()
     subject = "OTP from your application"
-    html_body = f"<p>Your OTP: <strong>{otp}</strong></p><p>If you did not request this, ignore.</p>"
+    html_text = f"Thank you for choosing <strong>Link Nest</strong>. Use the following OTP to complete your sign-up procedure. This OTP is valid for <strong>5 minutes</strong>."
 
-    sent = _helpers.send_email(payload.email, subject, html_body)
+    sent = _helpers.send_email(payload.email, subject, html_text, otp)
     print(sent)
     if not sent:
         raise HTTPException(status_code=500, detail="Failed to send email")
@@ -68,8 +68,8 @@ def forgot_password(payload: _schemas.ForgotPasswordReq, db: Session = Depends(_
         raise HTTPException(status_code=404, detail="Email not found")
     otp = _helpers.create_otp()
     subject = "Password reset OTP"
-    html_body = f"<p>Your password reset OTP: <strong>{otp}</strong></p>"
-    if not _helpers.send_email(payload.email, subject, html_body):
+    html_text = f"You requested to reset your password for <strong>Link Nest</strong>. Use the following OTP to complete your password reset. This OTP is valid for <strong>5 minutes</strong>."
+    if not _helpers.send_email(payload.email, subject, html_text, otp):
         raise HTTPException(status_code=500, detail="Failed to send email")
     _services.save_otp(db, payload.email, otp, purpose="reset")
     return {"message": "OTP sent for password reset"}
