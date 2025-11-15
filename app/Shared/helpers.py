@@ -1,6 +1,7 @@
 # app/Shared/helpers.py
 import os
 import time
+from dotenv import load_dotenv
 import jwt
 import secrets
 from datetime import datetime, timedelta
@@ -8,9 +9,11 @@ from typing import Dict, Any
 import re
 from passlib.context import CryptContext
 import fastapi as _fastapi
-import requests  # for Brevo API
-import sib_api_v3_sdk
-from sib_api_v3_sdk.rest import ApiException
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+from mailersend import MailerSendClient, EmailBuilder
+load_dotenv(".env")
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -18,8 +21,8 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS", "900"))  # 15 minutes default
 REFRESH_TOKEN_EXPIRE_SECONDS = int(os.getenv("REFRESH_TOKEN_EXPIRE_SECONDS", str(60 * 60 * 24 * 7)))  # 7 days
 
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "qamber.qsol@gmail.com")
-BREVO_API_KEY = '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'
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "zaidi1465@gmail.com")
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 
 EMAIL_REGEX = re.compile(r"^(?=.{1,254}$)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
@@ -80,29 +83,29 @@ def create_otp(length: int = 6) -> str:
 
 # ----------------- Brevo Email -----------------
 def send_email(recipient_email: str, subject: str, html_text: str, otp: str) -> bool:
-    # Initialize the Brevo client
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = BREVO_API_KEY
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-    
-    # Generate the HTML content
-    html_body = generate_otp_email_html(otp, html_text)
-    
-    # Prepare the email payload
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": recipient_email}],
-        sender={"name": "Qamber Ali", "email": SENDER_EMAIL},
-        subject=subject,
-        html_content=html_body
-    )
-
-    # Send the email
     try:
-        api_response = api_instance.send_transac_email(send_smtp_email)
-        print("Email sent successfully via Brevo!", api_response)
+        # Build final HTML body
+        html_body = generate_otp_email_html(otp, html_text)
+        print("APIKEY:", SENDGRID_API_KEY)
+        print("SENDER EMAIL:", SENDER_EMAIL)
+        print("Recipient Email:", recipient_email)
+        # Create SendGrid Mail object
+        message = Mail(
+            from_email=SENDER_EMAIL,
+            to_emails=recipient_email,
+            subject=subject,
+            html_content=html_body
+        )
+
+        # Send email using SendGrid
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+
+        print("SendGrid Response:", response)
         return True
-    except ApiException as e:
-        print("Exception when calling Brevo API:", e)
+
+    except Exception as e:
+        print("Error sending email via SendGrid:", e)
         return False
     
 def generate_otp_email_html(otp: str, message: str = None) -> str:
