@@ -11,8 +11,6 @@ from passlib.context import CryptContext
 import fastapi as _fastapi
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-
-from mailersend import MailerSendClient, EmailBuilder
 load_dotenv(".env")
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
